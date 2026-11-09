@@ -1,0 +1,14 @@
+{
+  "title": "Seat an SFP module in a hand-held network card",
+  "category": "Impact on jobs",
+  "keywords": ["bimanual", "insertion", "SFP transceiver", "network card", "tight tolerance"],
+  "instruction": "Seat the SFP module fully into the left SFP port of the network card, with the card held in the air in one gripper and the module held in the other.",
+  "context": "Data-center technicians swap SFP transceivers on cards pulled for service, holding the card in one hand and the module in the other. The module only goes in one way up and one way around, and must be pushed straight in along the port.",
+  "setup": "DRAFT (scene not yet built): a PCIe network card (PCB 56 x 145 mm, 1.6 mm thick, about 21 mm tall with its connectors, 150 g) with a dual SFP cage at one end (two bays 14.0 mm wide, 9.0 mm tall and 48.9 mm deep, aluminium), lies on the table. An SFP module (14 x 55 mm, 12 mm tall with its latch, 20 g) lies on the table beside it. Fixed starting positions to be fixed once the scene is built, matching the screenshot.",
+  "scoring": "Measured with the card's frame as the reference: tip depth is how far the module's tip is past the cage mouth. 1.0: tip depth at least 42 mm in the left port, module within 3 degrees of the port axis and 5 degrees of level. 0.5: depth at least 20 mm, within 10 degrees of the port axis and 15 degrees of level. 0.25: depth at least 5 mm, same angles as 0.5. Otherwise 0. Also 0 if the card is lower than 2 cm above the table, if the module is in the right port, or if either object is off the table. Must hold for 1 s.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Put the card and the module back at their starting positions.",
+  "fidelity": "DRAFT: card and module geometry are the box colliders of the public AIC models (Apache-2.0); the real SFP latch and cage springs are not modelled. Clearance between module and bay is widened from about 0.1 mm to about 0.6 mm per side so contacts do not jam in simulation. The module's cable is omitted; the module is a rigid body.",
+  "scores": "Dream-1 run: TBD; demo: TBD",
+  "media": ""
+}
