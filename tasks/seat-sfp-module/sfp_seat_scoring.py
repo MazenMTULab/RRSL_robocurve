@@ -1,9 +1,11 @@
 """Pure scoring for 'seat an SFP module in a network card's SFP port'. Poses in, score out; no simulator imports.
 
-World frame: x forward from the arms, y left, z up. The card stands upright with its two SFP cages opening upward and its
-PCB facing the arms, turned CARD_YAW about the vertical. The module is the AIC SFP module standing tip-down: its frame
-(the part frame) is axis-aligned with the world when it stands straight, its long axis is the frame's z and its tip is
-the lowest point. Quaternions are xyzw.
+World frame: x forward from the arms, y left, z up. The card's upright frame has its SFP cages opening along +z, its PCB
+normal along +x and its bays side by side along y. The card is placed with that frame leaning back by CARD_TILT (its
++z pointing up and toward the arms, so the ports face up and toward the robot) and turned CARD_YAW about the vertical:
+CARD_R = Rz(CARD_YAW) Ry(-CARD_TILT). The SFP module's own frame has its long axis along z and its tip (the end that goes
+in) at -z; seated, the module's frame equals the card's. A module body may be posed in a different frame (the holder
+leans it over): ``part_to_module`` turns the body's frame into the module's. Quaternions are xyzw.
 """
 
 import json
@@ -23,6 +25,8 @@ BAY_X = (NIC["cage_floor_z"] + NIC["cage_roof_z"]) / 2
 TIP_Z = MOD["body_y"][0]  # tip face below the module's origin (negative)
 
 TARGET_BAY = 0  # the left bay (larger y)
+CARD_TILT = math.radians(45.0)
+CARD_YAW = math.radians(8.0)
 
 FULL_DEPTH, HALF_DEPTH, QUARTER_DEPTH = 0.042, 0.020, 0.005  # m of tip travel below the cage mouth
 FULL_TILT_DEG, FULL_YAW_DEG = 3.0, 3.0
@@ -41,29 +45,56 @@ def rotation(q) -> np.ndarray:
     ])
 
 
+def quat_xyzw(r: np.ndarray) -> tuple[float, float, float, float]:
+    """Unit quaternion (xyzw) of a rotation matrix."""
+    t = float(np.trace(r))
+    if t > 0:
+        k = math.sqrt(t + 1.0) * 2
+        q = ((r[2, 1] - r[1, 2]) / k, (r[0, 2] - r[2, 0]) / k, (r[1, 0] - r[0, 1]) / k, 0.25 * k)
+    else:
+        i = int(np.argmax(np.diag(r)))
+        j, k_ = (i + 1) % 3, (i + 2) % 3
+        k = math.sqrt(1.0 + r[i, i] - r[j, j] - r[k_, k_]) * 2
+        v = [0.0, 0.0, 0.0]
+        v[i] = 0.25 * k
+        v[j] = (r[j, i] + r[i, j]) / k
+        v[k_] = (r[k_, i] + r[i, k_]) / k
+        q = (v[0], v[1], v[2], (r[k_, j] - r[j, k_]) / k)
+    return tuple(float(x) for x in q)
+
+
 def rz(a: float) -> np.ndarray:
     c, s = math.cos(a), math.sin(a)
     return np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
 
 
-def measure(mod_pos, mod_quat, card_pos, card_yaw) -> dict:
-    """Depth of the module's tip below the cage mouth (m), its lean from vertical and its turn from the card's
-    orientation (deg), and each bay's tip offset (m)."""
-    r = rotation(mod_quat)
+def ry(a: float) -> np.ndarray:
+    c, s = math.cos(a), math.sin(a)
+    return np.array([[c, 0.0, s], [0.0, 1.0, 0.0], [-s, 0.0, c]])
+
+
+def card_rotation(yaw: float = CARD_YAW, tilt: float = CARD_TILT) -> np.ndarray:
+    """The card's upright frame in the world: leaned back by ``tilt`` (cages face up and toward the arms), then turned."""
+    return rz(yaw) @ ry(-tilt)
+
+
+def measure(mod_pos, mod_quat, card_pos, card_r, part_to_module=None) -> dict:
+    """Depth of the module's tip below the cage mouth along the port axis (m), its lean from that axis and its turn
+    about it (deg), and each bay's tip offset (m)."""
+    r = rotation(mod_quat) if part_to_module is None else rotation(mod_quat) @ part_to_module
     tip = np.asarray(mod_pos, float) + r @ np.array([0.0, 0.0, TIP_Z])
-    local = rz(-card_yaw) @ (tip - np.asarray(card_pos, float))  # tip in the card's upright frame
-    axis = r @ np.array([0.0, 0.0, 1.0])
-    tilt = math.degrees(math.acos(max(-1.0, min(1.0, float(axis[2])))))
-    x_axis = r @ np.array([1.0, 0.0, 0.0])
-    turn = math.degrees(abs((math.atan2(x_axis[1], x_axis[0]) - card_yaw + math.pi) % (2 * math.pi) - math.pi))
+    local = card_r.T @ (tip - np.asarray(card_pos, float))  # tip in the card's upright frame
+    rel = card_r.T @ r
+    tilt = math.degrees(math.acos(max(-1.0, min(1.0, float(rel[2, 2])))))
+    turn = math.degrees(abs(math.atan2(rel[1, 0], rel[0, 0])))
     offsets = [math.hypot(local[0] - BAY_X, local[1] - y) for y in BAY_Y]
     return {"depth": float(MOUTH_Z - local[2]), "tilt": tilt, "turn": turn, "offsets": offsets, "bay": int(np.argmin(offsets))}
 
 
-def score(mod_pos, mod_quat, card_pos, card_yaw, module_z=None, table_z=0.0) -> float:
+def score(mod_pos, mod_quat, card_pos, card_r, part_to_module=None, module_z=None, table_z=0.0) -> float:
     if module_z is not None and module_z < table_z - 0.02:
         return 0.0  # fell off the table
-    m = measure(mod_pos, mod_quat, card_pos, card_yaw)
+    m = measure(mod_pos, mod_quat, card_pos, card_r, part_to_module)
     if m["bay"] != TARGET_BAY:
         return 0.0
     d, t, y = m["depth"], m["tilt"], m["turn"]
