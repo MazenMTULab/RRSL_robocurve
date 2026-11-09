@@ -6,6 +6,7 @@ the card's left port (the one at the larger y).
 """
 
 import math
+import os
 import pathlib
 import sys
 
@@ -123,6 +124,16 @@ OBJECTS = (
 
 def score(objects):
     m = objects["module"]
+    if os.environ.get("SFP_DEBUG"):  # development only: one line per step with the module's pose in the card's frame
+        with open(os.environ["SFP_DEBUG"], "a") as f:
+            r = sc.rotation(m.quat_xyzw) @ R_HOLD
+            tip = R_CARD.T @ (m.pos + r @ np.array([0.0, 0.0, sc.TIP_Z]) - CARD_POS)
+            rel = R_CARD.T @ r  # module axes in the card's frame
+            pitch = math.degrees(math.atan2(rel[0, 2], rel[2, 2]))  # lean about the card's y axis (toward/away from the PCB)
+            roll = math.degrees(math.atan2(-rel[1, 2], rel[2, 2]))  # lean about its x axis (sideways, along the bays)
+            yaw = math.degrees(math.atan2(rel[1, 0], rel[0, 0]))
+            f.write(f"tip(x,y)mm=({(tip[0]-sc.BAY_X)*1000:.1f},{(tip[1]-sc.BAY_Y[0])*1000:.1f}) depth={(sc.MOUTH_Z-tip[2])*1000:.1f} "
+                    f"pitch={pitch:.1f} roll={roll:.1f} yaw={yaw:.1f} z={m.pos[2]:.3f} speed={float(np.linalg.norm(m.lin_vel)):.3f}\n")
     return sc.score(m.pos, m.quat_xyzw, CARD_POS, R_CARD, part_to_module=R_HOLD, module_z=float(m.pos[2]), table_z=TOP)
 
 
@@ -141,6 +152,9 @@ GRIP_UP = 0.010  # the TCP rides this far above the grip point so the pads' tips
 DEMO_DEPTH = 0.044
 LIFT_MARGIN = 0.01  # carry height above the higher of the two draw-out points
 Z_UP = np.array([0.0, 0.0, 1.0])
+# WHY: measured in simulation (SFP_DEBUG logs): the held module's tip reached the port mouth 3.4 mm off in the card's x and 3.0 mm
+# off in y (the grasp and the arm's sag), where the port allows about 1 mm. The demo shifts its target by the opposite.
+DEMO_CORRECTION = np.array([0.0034, -0.0030, 0.0])  # in the card's frame (m)
 
 
 def _tcp(origin, r):
@@ -151,7 +165,7 @@ def demo():
     axis_start, axis_card = R_HOLD @ Z_UP, R_CARD @ Z_UP
     pick = _tcp(HOLD_POS, R_HOLD)
     tip = CARD_POS + R_CARD @ np.array([sc.BAY_X, sc.BAY_Y[sc.TARGET_BAY], sc.MOUTH_Z - DEMO_DEPTH])
-    place = _tcp(tip - R_CARD @ np.array([0.0, 0.0, sc.TIP_Z]), R_CARD)
+    place = _tcp(tip - R_CARD @ np.array([0.0, 0.0, sc.TIP_Z]), R_CARD) + R_CARD @ DEMO_CORRECTION
     out_start, out_card = pick + axis_start * 0.065, place + axis_card * 0.080
     top_z = max(out_start[2], out_card[2]) + LIFT_MARGIN
     lift = np.array([out_start[0], out_start[1], top_z])
