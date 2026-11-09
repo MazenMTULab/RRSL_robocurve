@@ -1,0 +1,14 @@
+{
+  "title": "Seat an SFP module in a network card's left port",
+  "category": "Impact on jobs",
+  "keywords": ["insertion", "SFP transceiver", "network card", "tight tolerance", "angled target"],
+  "instruction": "Take the SFP module out of its holder and push it, tip first, all the way into the network card's left SFP port (the one nearer the left arm).",
+  "context": "Seating a pluggable SFP transceiver in a network card is a routine data-center hardware step. The module only fits tip first, level, and turned to match the card, which here stands about 8 degrees off square to the robot, so the hand has to turn it before pushing.",
+  "setup": "Positions in cm from the midpoint between the arm bases (x forward, y left), on the station table. Network card: a PCIe card model with a green PCB and steel parts, standing upright in a fixed steel cradle with its flat face toward the arms, turned 8 degrees counterclockwise (seen from above); only its upper part is modelled, 12 cm wide, 11.9 cm tall, 2.1 cm thick, fixed, its centre at x 30, y 8. Its top edge carries two steel SFP ports (cages) opening upward, 16.0 mm wide, 11.0 mm tall and 48.9 mm deep inside, 23.2 mm apart, mouths 11.7 cm above the table. Left port: the one at the larger y. SFP module: a 20 g gold-coloured rigid body, 14 mm wide, 12 mm tall (latch included) and 55 mm long, standing tip-down in a fixed steel holder (cavity 15.2 x 17 mm, 2 cm deep, wall 4 mm) at x 24, y 30, so about 3.5 cm of it, with its latch, stands out of the holder. One fixed starting layout.",
+  "scoring": "Measured on the module's tip: depth is how far its tip is below the port mouth. 1.0: tip depth at least 42 mm in the left port, with the module within 3 degrees of vertical and within 3 degrees of the card's turn (about 8 degrees), and at rest for 1 s. 0.5: depth at least 20 mm in the left port, within 10 degrees of vertical and of the card's turn. 0.25: depth at least 5 mm in the left port, same angles as 0.5. Otherwise 0. The tip must also be within 1.5 mm of the port's centre line at the mouth, or 4.5 mm once it is inside. Any other outcome scores 0, including the module in the right port or off the table. Real-world check: the part of the module still above the port is at most 13 mm long at 42 mm depth.",
+  "run_limit": "1,200 steps (1 minute at 20 Hz)",
+  "reset_notes": "Stand the module back in its holder, tip down.",
+  "fidelity": "DRAFT: geometry is the box colliders of the public AIC SFP module and NIC card models (Apache-2.0), at full size. Only the card's upper part is modelled. The ports are widened by 1.0 mm on each side (real clearance is about 0.1 mm, which jams in simulation), so the margin is looser than real. No latch spring, retention click or electrical contacts, so no insertion force or click. Friction 0.8.",
+  "scores": "Dream-1 run: TBD; demo: TBD",
+  "media": ""
+}
