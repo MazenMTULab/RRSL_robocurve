@@ -28,7 +28,7 @@ TARGET_BAY = 0  # the left bay (larger y)
 CARD_TILT = math.radians(45.0)
 CARD_YAW = math.radians(0.0)  # the card stands square to the robot
 
-FULL_DEPTH, HALF_DEPTH, QUARTER_DEPTH = 0.044, 0.020, 0.005  # m of tip travel below the cage mouth
+FULL_DEPTH, HALF_DEPTH, QUARTER_DEPTH = 0.040, 0.020, 0.005  # full: the module's shoulder is against the port (about 41.5 mm in the simulation)  # m of tip travel below the cage mouth
 FULL_TILT_DEG = 3.0
 PART_TILT_DEG = 10.0
 LATERAL_M = 0.0015  # tip centre off the bay's centre line at the mouth; three times that once it is in

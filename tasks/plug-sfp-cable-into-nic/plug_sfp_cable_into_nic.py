@@ -89,6 +89,32 @@ def _holder_boxes():
     ]
 
 
+FUNNEL = float(os.environ.get("SFP_FUNNEL", "0.002"))  # m: how far the lead-in flares outward at the port mouth (0 = none)
+
+
+def _funnel():
+    """Lead-in chamfers around each port's mouth: four thin 45-degree plates per port, as a real cage's flared entry.
+    Returns (centre, size, local rotation, colour) in the card's upright frame."""
+    out = []
+    if FUNNEL <= 0:
+        return out
+    f, t = FUNNEL, 0.0004
+    k = 0.7 * t  # shifts each plate outward so its inner face meets the port's edge instead of cutting into the opening
+    length = f * math.sqrt(2) + 0.0004
+    x_lo, x_hi, z_m = GEOM["nic"]["cage_floor_z"], GEOM["nic"]["cage_roof_z"], sc.MOUTH_Z
+    for b in GEOM["nic"]["bays"]:
+        y_lo, y_hi = -b["x_max"], -b["x_min"]  # the bay's inner faces along the card's y
+        yc, wy = (y_lo + y_hi) / 2, (y_hi - y_lo) + 2 * f + 0.001
+        out.append(((x_hi + f / 2 + k, yc, z_m + f / 2), (length, wy, t), sc.ry(-math.pi / 4), METAL))  # roof side
+        out.append(((x_lo - f / 2 - k, yc, z_m + f / 2), (length, wy, t), sc.ry(math.pi / 4), METAL))  # floor side
+        wx = (x_hi - x_lo) + 2 * f + 0.001
+        xc = (x_hi + x_lo) / 2
+        rx = lambda a: np.array([[1, 0, 0], [0, math.cos(a), -math.sin(a)], [0, math.sin(a), math.cos(a)]])  # noqa: E731
+        out.append(((xc, y_hi + f / 2 + k, z_m + f / 2), (wx, length, t), rx(math.pi / 4), METAL))
+        out.append(((xc, y_lo - f / 2 - k, z_m + f / 2), (wx, length, t), rx(-math.pi / 4), METAL))
+    return out
+
+
 def _lowest(boxes, r):
     return min(float((r @ (np.array(c) + np.array([dx, dy, dz]) * np.array(s) / 2))[2])
                for c, s, _ in boxes for dx in (-1, 1) for dy in (-1, 1) for dz in (-1, 1))
@@ -163,6 +189,8 @@ def _tray():
 OBJECTS = (
     _shapes("card", _CARD, CARD_POS, R_CARD)
     + _shapes("holder", _HOLD, HOLD_POS, R_HOLD)
+    + [Shape(f"funnel_{i:02d}", pos=tuple((CARD_POS + R_CARD @ np.array(c)).tolist()), size=tuple(sz), color=col, rot_xyzw=_quat(R_CARD @ rl))
+       for i, (c, sz, rl, col) in enumerate(_funnel())]
     + _tray()
     + [Box("card_base", pos=(MOUTH_XY[0] - 0.02, MOUTH_XY[1], TOP + BASE_T / 2), size=(0.14, 0.15, BASE_T), color=STEEL),
        Box("holder_base", pos=(HOLDER_XY[0], HOLDER_XY[1], TOP + BASE_T / 2), size=(0.07, 0.06, BASE_T), color=STEEL),
@@ -248,16 +276,25 @@ def demo_script(ctx):
     cmd = np.array(pre, dtype=float)
     nominal = lambda depth: MOUTH + A_IN * depth - d0  # noqa: E731  the TCP that puts the tip `depth` m into the port, if the grip never slips
 
+    yaw_now = yaw_c
+
     def measure():
+        nonlocal yaw_now
         tip_, axis_ = _plug(ctx.states()["cable"])
+        a_ = R_CARD.T @ axis_  # the plug's axis in the card's frame: (0, 0, -1) when it points straight into the port
+        # turn the wrist about the vertical so the plug's axis loses its sideways lean (the tip is steered by the TCP's moves)
+        yaw_now = float(np.clip(yaw_now - YAW_GAIN * a_[1] / 0.707, yaw_c - 0.08, yaw_c + 0.08))
         return R_CARD.T @ (tip_ - MOUTH)  # (across, along the bays, up the port axis): depth = -z
 
-    def step_to(depth, gain=0.6):
+    GAIN = float(os.environ.get("SFP_GAIN", "0.05"))
+    YAW_GAIN = float(os.environ.get("SFP_YAW_GAIN", "0.08"))
+
+    def step_to(depth, gain=None):
         """One control step: feed the tip's error from the port's centre line back into the TCP, and its depth error too."""
         nonlocal cmd
         e = measure()
         want = np.array([0.0, 0.0, -depth])
-        cmd = cmd + R_CARD @ np.clip(gain * (want - e), -0.002, 0.002)
+        cmd = cmd + R_CARD @ np.clip((GAIN if gain is None else gain) * (want - e), -0.001, 0.001)
         cmd = np.clip(cmd, nominal(depth) - 0.008, nominal(depth) + 0.008)  # never wind up far from the plan
         return e
 
@@ -266,12 +303,12 @@ def demo_script(ctx):
     while depth < -0.012:
         depth += 0.002
         step_to(depth)
-        yield from arm.move(cmd, yaw=yaw_c, duration=0.05, label="approach along the port axis")
+        yield from arm.move(cmd, yaw=yaw_now, duration=0.05, label="approach along the port axis")
     calm = 0
     for _ in range(300):
-        e = step_to(-0.012, gain=0.5)
+        e = step_to(-0.012)
         calm = calm + 1 if max(abs(e[0]), abs(e[1])) < 0.00015 else 0
-        yield from arm.move(cmd, yaw=yaw_c, duration=0.05, label="line up on the port")
+        yield from arm.move(cmd, yaw=yaw_now, duration=0.05, label="line up on the port")
         if calm >= 8:
             break
     # 2. in, holding back whenever the tip drifts off the centre line
@@ -287,8 +324,8 @@ def demo_script(ctx):
             held += 1
         if held > 150:
             break
-        step_to(depth, gain=0.5)
-        yield from arm.move(cmd, yaw=yaw_c, duration=0.05, label="push in along the port axis")
+        step_to(depth)
+        yield from arm.move(cmd, yaw=yaw_now, duration=0.05, label="push in along the port axis")
         if os.environ.get("SFP_IK"):
             print(f"[ik] depth_target={depth*1000:.1f} measured_depth={-e[2]*1000:.2f} across={e[0]*1000:.2f} along={e[1]*1000:.2f} held={held}", flush=True)
     for _ in range(20):

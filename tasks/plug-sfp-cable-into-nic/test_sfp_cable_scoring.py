@@ -27,7 +27,7 @@ def run(card_r, depth, bay=0, dy=0.0, dx=0.0, tilt_deg=0.0):
 
 
 def test_tiers(card_r):
-    assert run(card_r, 0.046) == 1.0
+    assert run(card_r, 0.042) == 1.0
     assert run(card_r, s.FULL_DEPTH + 1e-6) == 1.0
     assert run(card_r, 0.030) == 0.5
     assert run(card_r, 0.010) == 0.25
