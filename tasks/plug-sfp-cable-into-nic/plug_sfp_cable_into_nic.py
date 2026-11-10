@@ -1,8 +1,9 @@
-"""On the station table: a PCIe network card leans back 45 degrees in a slanted cradle in front of the left arm, square to the arms, its two SFP ports at its upper edge facing up and toward the arms at 45 degrees. An SFP-to-SC fibre
-patch cable lies across the table: its SC plug (blue) rests in a small tray, fixed in place, and its SFP plug (gold) lies
-in a slanted holder to the left of the card, tip down at 45 degrees like the card's ports, the cable leaving its back end
-and draping to the tray. The robot must lift the SFP plug out and plug it, tip first, all the way into the card's left port
-(the one at the larger y), with the cable's other end staying in its tray.
+"""On the station table: a PCIe network card stands upright on a foot in front of the left arm, its face toward that arm, its
+two SFP ports at its upper edge facing straight up. An SFP-to-SC fibre patch cable lies across the table: its SC plug (blue)
+rests in a small tray, fixed in place, and its SFP plug (gold) lies in a slanted holder to the left of the card, tip down at
+45 degrees, the cable leaving its back end and draping to the tray. The robot must lift the SFP plug out, stand it upright,
+and plug it, tip first, all the way into the card's port nearer the arms (x about 0.29), with the cable's other end staying in
+its tray.
 """
 
 import math
@@ -21,9 +22,11 @@ SCENE = "station"
 TOP = TABLE_TOP[SCENE]
 
 R_CARD = sc.card_rotation()  # the card's upright frame in the world: leaned back 45 degrees, turned 8
-R_HOLD = sc.ry(-sc.CARD_TILT)  # the holder's frame: leaned the same way, not turned; the plug's axis is its z
+HOLD_TILT = math.radians(45.0)  # the plug lies leaning 45 degrees, its back end toward the cable tray (-y)
+GRIP_YAW = -math.pi / 2  # the pads close along x, across the plug's width
+R_HOLD = sc.rx(HOLD_TILT) @ sc.rz(math.pi / 2)  # the holder's frame: the plug's axis is its z, its plate underneath
 CLEARANCE = 0.0  # m a side added to the AIC port; 0 = the AIC model's own size
-CARD_Z_CUT = -0.032  # WHY: only the card's upper part is modelled (the rest sits inside the cradle)
+CARD_Z_CUT = 0.022  # WHY: only the card's upper part is modelled (the rest sits inside the cradle)
 BASE_T = 0.006
 SKIN, METAL, GOLD, STEEL, BLUE = (0.10, 0.45, 0.20), (0.72, 0.74, 0.77), (0.85, 0.70, 0.20), (0.35, 0.36, 0.38), (0.10, 0.30, 0.75)
 CAGE = "10099100-011lfc001"
@@ -68,7 +71,7 @@ def _card_boxes():
         if lo < CARD_Z_CUT:  # clip the box to the modelled part of the card
             c, s = (c[0], c[1], (CARD_Z_CUT + hi) / 2), (s[0], s[1], hi - CARD_Z_CUT)
         out.append((c, s, color))
-    out.append(((-0.0046, 0.0, -0.040 + 0.0225), (0.006, 0.12, 0.045), STEEL))  # back plate behind the PCB
+    out.append(((-0.0046, 0.0, CARD_Z_CUT + 0.004), (0.006, 0.12, 0.024), STEEL))  # back plate behind the PCB
     out.append(((0.0, 0.0, CARD_Z_CUT - 0.004), (0.060, 0.110, 0.008), STEEL))  # foot under the cut edge
     return out
 
@@ -141,6 +144,7 @@ _P0 = HOLD_POS + R_HOLD @ np.array([0.0, 0.0, sc.MOD["body_y"][1]])  # the plug'
 _D0 = R_HOLD @ np.array([0.0, 0.0, 1.0])  # from the plug's tip toward its back end: the cable's first direction
 _E = SC_CENTRE - SC_HEADING * SC_BODY[0] / 2  # the SC plug's back end: where the cable ends
 CABLE_R = 0.0025
+CABLE_SEG = 0.02
 
 
 def _drape():
@@ -184,6 +188,16 @@ def _tray():
     return shapes
 
 
+DOCK_XY = (0.30, 0.20)  # where the plug's tip rests while it is turned upright
+DOCK_FLOOR = TOP + BASE_T
+DOCK = [
+    Box("dock_base", pos=(DOCK_XY[0] - 0.01, DOCK_XY[1], TOP + BASE_T / 2), size=(0.08, 0.06, BASE_T), color=STEEL),
+    Box("dock_wall", pos=(DOCK_XY[0] + 0.0045, DOCK_XY[1], DOCK_FLOOR + 0.004), size=(0.004, 0.030, 0.008), color=STEEL),
+    Box("dock_rail_0", pos=(DOCK_XY[0] - 0.015, DOCK_XY[1] + 0.0135, DOCK_FLOOR + 0.0125), size=(0.040, 0.003, 0.025), color=STEEL),
+    Box("dock_rail_1", pos=(DOCK_XY[0] - 0.015, DOCK_XY[1] - 0.0135, DOCK_FLOOR + 0.0125), size=(0.040, 0.003, 0.025), color=STEEL),
+]
+
+
 OBJECTS = (
     _shapes("card", _CARD, CARD_POS, R_CARD)
     + _shapes("holder", _HOLD, HOLD_POS, R_HOLD)
@@ -225,9 +239,16 @@ A_IN = R_CARD @ np.array([0.0, 0.0, -1.0])  # the port axis, pointing into the p
 MOUTH = CARD_POS + R_CARD @ np.array([sc.BAY_X, sc.BAY_Y[sc.TARGET_BAY], sc.MOUTH_Z])
 UP = np.array([0.0, 0.0, 1.0])
 
+# extra cameras for the recording only (cabledemo.py): name -> (position, look-at point, focal length mm), world frame
+RECORD_CAMS = {
+    "side_cam": (MOUTH + np.array([0.0, 0.62, 0.12]), MOUTH + np.array([-0.03, 0.10, -0.03]), 20.0),  # side-on to the insertion
+}
+
 
 def _rz(a):
     return sc.rz(a)
+
+
 
 
 def demo_script(ctx):
@@ -235,58 +256,94 @@ def demo_script(ctx):
 
     arm = ctx.left
     yield from arm.wait(1.5)  # let the cable settle
+
+    # -- the right arm takes the cable's slack: it picks the cable up 0.28 m behind the plug and holds it clear of the card
+    rarm = ctx.right
+    pts = ctx.states()["cable"].points  # segment centres, SC plug end to SFP plug end
+    k = int(round(0.28 / CABLE_SEG))
+    c, c_dir = pts[-1 - k], pts[-k] - pts[-2 - k]
+    ryaw = math.atan2(c_dir[1], c_dir[0])  # the pads close across the cable
+    hold = c + np.array([0.0, 0.0, 0.013])
+    yield from rarm.move(hold + np.array([0.0, 0.0, 0.08]), yaw=ryaw, finger=FINGER_OPEN, duration=2.5, label="right arm over the cable")
+    yield from rarm.move(hold, yaw=ryaw, duration=1.5, label="down on the cable")
+    yield from rarm.grip(FINGER_CLOSED, 0.8)
+    yield from rarm.move(hold + np.array([0.0, 0.0, 0.04]), yaw=ryaw, duration=1.2, label="lift the cable's slack")
     st = ctx.states()["cable"]
     tip, axis = _plug(st)
     grip = st.end_plug - axis * GRIP_BACK + UP * GRIP_UP
     back = -axis  # from the tip toward the plug's back end (out of the holder)
-    yield from arm.move(grip + back * 0.08, yaw=0.0, finger=FINGER_OPEN, duration=1.5, label="to the plug")
-    yield from arm.move(grip, yaw=0.0, duration=1.5, label="down on it")
+    yield from arm.move(grip + back * 0.08, yaw=GRIP_YAW, finger=FINGER_OPEN, duration=1.5, label="to the plug")
+    yield from arm.move(grip, yaw=GRIP_YAW, duration=1.5, label="down on it")
     yield from arm.grip(FINGER_CLOSED, 0.8)
     out = grip + back * 0.065
-    yield from arm.move(out, yaw=0.0, duration=1.5, label="draw out along its axis")
+    for f in np.linspace(0.1, 1.0, 10):  # draw it out in short steps along its axis
+        yield from arm.move(grip + (out - grip) * f, yaw=GRIP_YAW, duration=0.15, label="draw out along its axis")
     for _ in range(10):
-        yield  # let the grip settle
-    st = ctx.states()["cable"]
-    tip, axis = _plug(st)
-    d0 = tip - out  # from the TCP to the tip while the grip is at yaw 0; it turns with the wrist
-    yaw_c = sc.CARD_YAW
-    pre_tip = MOUTH - A_IN * 0.08
-    pre = pre_tip - _rz(yaw_c) @ d0
-    top_z = max(out[2], pre[2]) + 0.01
-    yield from arm.move((out[0], out[1], top_z), yaw=0.0, duration=1.0, label="lift")
-    yield from arm.move((pre[0], pre[1], top_z), yaw=yaw_c, duration=2.0, label="carry, turning to the card")
+        yield
+
+    # -- turn it upright: tilt the hand 45 degrees about the pad line, so the plug (rigid in the pads) stands vertical
+    yield from arm.move(out + np.array([0.0, 0.0, 0.03]), yaw=GRIP_YAW, duration=1.0, label="lift")
+    tcp = out + np.array([0.0, 0.0, 0.03])
+    for k in np.linspace(0.0, -HOLD_TILT, 7)[1:]:
+        ctx.tilt = np.array([float(k), 0.0, 0.0])
+        yield from arm.move(tcp, yaw=GRIP_YAW, duration=0.8, label="tilt the plug upright")
+    for _ in range(12):  # the plug lags the hand a little: keep tilting until it reads upright
+        for _ in range(10):
+            yield
+        axis = _plug(ctx.states()["cable"])[1]
+        lean = math.asin(max(-1.0, min(1.0, float(axis[1]))))
+        if abs(lean) < math.radians(0.7):
+            break
+        ctx.tilt = ctx.tilt + np.array([-0.9 * lean, 0.0, 0.0])
+        yield from arm.move(tcp, yaw=GRIP_YAW, duration=0.8, label="straighten the plug")
+    for _ in range(20):
+        yield
+    tip, axis = _plug(ctx.states()["cable"])
+    d0 = tip - tcp
+
+    # -- carry it over the port and in, as before
+    yaw_c = GRIP_YAW
+    pre_tip = MOUTH - A_IN * 0.04
+    pre = pre_tip - d0
+    top_z = max(tcp[2], pre[2]) + 0.01
+    yield from arm.move((tcp[0], tcp[1], top_z), yaw=GRIP_YAW, duration=1.0, label="lift")
+    yield from arm.move((pre[0], pre[1], top_z), yaw=yaw_c, duration=2.0, label="carry to the card")
     yield from arm.move(pre, yaw=yaw_c, duration=1.0, label="down to the port axis")
     cmd = np.array(pre, dtype=float)
-    nominal = lambda depth: MOUTH + A_IN * depth - d0  # noqa: E731  the TCP that puts the tip `depth` m into the port, if the grip never slips
+    nominal = lambda depth: MOUTH + A_IN * depth - d0  # noqa: E731
 
     yaw_now = yaw_c
 
     def measure():
         nonlocal yaw_now
         tip_, axis_ = _plug(ctx.states()["cable"])
-        a_ = R_CARD.T @ axis_  # the plug's axis in the card's frame: (0, 0, -1) when it points straight into the port
-        # turn the wrist about the vertical so the plug's axis loses its sideways lean (the tip is steered by the TCP's moves)
-        yaw_now = float(np.clip(yaw_now - YAW_GAIN * a_[1] / 0.707, yaw_c - 0.08, yaw_c + 0.08))
-        return R_CARD.T @ (tip_ - MOUTH)  # (across, along the bays, up the port axis): depth = -z
+        a_ = R_CARD.T @ axis_
+        w_ = R_CARD.T @ sc.rotation(ctx.states()["cable"].end_plug_quat)[:, 1]  # the plug's width axis in the card's frame: along y when it is square to the port
+        roll = math.atan2(w_[0], w_[1])
+        roll = (roll + math.pi / 2) % math.pi - math.pi / 2  # a plug is the same turned half way round
+        yaw_now = float(np.clip(yaw_now + ROLL_GAIN * roll, yaw_c - 0.12, yaw_c + 0.12))
+        ctx.roll = roll
+        ctx.tilt = ctx.tilt + np.array([-TILT_GAIN * axis_[1], TILT_GAIN * axis_[0], 0.0])  # hold the plug on the port's axis by tilting the hand
+        return R_CARD.T @ (tip_ - MOUTH)
 
-    GAIN = 0.05
-    YAW_GAIN = 0.08
+    GAIN = 0.12
+    TILT_GAIN = 0.05
+    ROLL_GAIN = 0.3
 
     def step_to(depth, gain=None):
-        """One control step: feed the tip's error from the port's centre line back into the TCP, and its depth error too."""
         nonlocal cmd
         e = measure()
         want = np.array([0.0, 0.0, -depth])
-        cmd = cmd + R_CARD @ np.clip((GAIN if gain is None else gain) * (want - e), -0.001, 0.001)
-        cmd = np.clip(cmd, nominal(depth) - 0.008, nominal(depth) + 0.008)  # never wind up far from the plan
+        cmd = cmd + R_CARD @ np.clip((GAIN if gain is None else gain) * (want - e), -0.0015, 0.0015)
+        cmd = np.clip(cmd, nominal(depth) - 0.008, nominal(depth) + 0.008)
         return e
 
-    # 1. approach to 12 mm outside the port, then settle on its centre line before going in
-    depth = -0.08
+    depth = -0.04
     while depth < -0.012:
         depth += 0.002
         step_to(depth)
         yield from arm.move(cmd, yaw=yaw_now, duration=0.05, label="approach along the port axis")
+    e0 = measure()
     calm = 0
     for _ in range(300):
         e = step_to(-0.012)
@@ -294,14 +351,13 @@ def demo_script(ctx):
         yield from arm.move(cmd, yaw=yaw_now, duration=0.05, label="line up on the port")
         if calm >= 8:
             break
-    # 2. in, holding back whenever the tip drifts off the centre line
     depth = -0.012
     held = 0
     while depth < DEMO_DEPTH:
         e = measure()
         off = max(abs(e[0]), abs(e[1]))
-        if off < 0.00025 and -e[2] > depth - 0.0025:  # on the centre line and keeping up: go deeper
-            depth += 0.0003
+        if off < (0.00035 if depth < 0.0 else 0.00025) and -e[2] > depth - 0.0025:
+            depth += 0.0005
             held = 0
         else:
             held += 1
@@ -313,3 +369,4 @@ def demo_script(ctx):
         yield
     yield from arm.grip(FINGER_OPEN, 0.6)
     yield from arm.move(cmd - A_IN * 0.06, yaw=yaw_c, duration=1.0, label="retreat along the axis")
+    yield from rarm.grip(FINGER_OPEN, 0.6)  # the right arm lets the cable go

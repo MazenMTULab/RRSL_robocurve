@@ -47,7 +47,8 @@ def test_lean_limits(card_r):
 
 
 def test_lateral_offset(card_r):
-    assert run(card_r, 0.046, dy=0.002) == 1.0
+    assert run(card_r, 0.046, dy=0.001) == 1.0
+    assert run(card_r, 0.046, dy=0.002) == 0.0  # the same limit at every depth
     assert run(card_r, 0.046, dy=0.006) == 0.0
     assert run(card_r, 0.002, dy=0.003) == 0.0
 

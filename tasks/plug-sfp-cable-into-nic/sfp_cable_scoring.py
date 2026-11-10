@@ -1,8 +1,8 @@
 """Pure scoring for 'plug the SFP end of a cable into a network card's SFP port'. Poses in, score out; no simulator imports.
 
 World frame: x forward from the arms, y left, z up. The card's upright frame has its SFP cages opening along +z, its PCB
-normal along +x and its bays side by side along y. The card is placed with that frame leaning back by CARD_TILT (its
-+z pointing up and toward the arms, so the ports face up and toward the robot) and turned CARD_YAW about the vertical:
+normal along +x and its bays side by side along y. The card stands upright (CARD_TILT 0: ports facing up; the frame can also lean back by
+CARD_TILT) and is turned CARD_YAW about the vertical:
 CARD_R = Rz(CARD_YAW) Ry(-CARD_TILT). The plug is measured by its tip face centre and by the unit vector along its body toward the tip; seated, that
 vector points along the card's -z (into the port).
 """
@@ -24,14 +24,14 @@ BAY_X = (NIC["cage_floor_z"] + NIC["cage_roof_z"]) / 2
 PLUG_LEN = MOD["body_y"][1] - MOD["body_y"][0]  # the plug's body: 47.3 mm
 PLUG_CENTRE_Y = (MOD["body_y"][1] + MOD["body_y"][0]) / 2
 
-TARGET_BAY = 0  # the left bay (larger y)
-CARD_TILT = math.radians(45.0)
-CARD_YAW = math.radians(0.0)  # the card stands square to the robot
+TARGET_BAY = 0  # the bay at the card's larger y (world: the one nearer the arms, with CARD_YAW 90)
+CARD_TILT = math.radians(0.0)  # the card stands upright
+CARD_YAW = math.radians(90.0)  # the card's bays run along x: its face is toward the left arm
 
 FULL_DEPTH, HALF_DEPTH, QUARTER_DEPTH = 0.040, 0.020, 0.005  # full: the module's shoulder is against the port (about 41.5 mm in the simulation)  # m of tip travel below the cage mouth
 FULL_TILT_DEG = 3.0
 PART_TILT_DEG = 10.0
-LATERAL_M = 0.0015  # tip centre off the bay's centre line at the mouth; three times that once it is in
+LATERAL_M = 0.0015  # tip centre off the bay's centre line, at any depth
 
 
 def rotation(q) -> np.ndarray:
@@ -66,6 +66,11 @@ def quat_xyzw(r: np.ndarray) -> tuple[float, float, float, float]:
 def rz(a: float) -> np.ndarray:
     c, s = math.cos(a), math.sin(a)
     return np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
+
+
+def rx(a: float) -> np.ndarray:
+    c, s = math.cos(a), math.sin(a)
+    return np.array([[1.0, 0.0, 0.0], [0.0, c, -s], [0.0, s, c]])
 
 
 def ry(a: float) -> np.ndarray:
@@ -103,7 +108,7 @@ def score(tip, axis, card_pos, card_r, plug_z=None, table_z=0.0) -> float:
     if m["bay"] != TARGET_BAY:
         return 0.0
     d, t = m["depth"], m["tilt"]
-    if m["offsets"][TARGET_BAY] > LATERAL_M * (1.0 if d < QUARTER_DEPTH else 3.0):
+    if m["offsets"][TARGET_BAY] > LATERAL_M:
         return 0.0
     if d >= FULL_DEPTH and t <= FULL_TILT_DEG:
         return 1.0
