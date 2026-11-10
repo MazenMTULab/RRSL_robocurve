@@ -102,18 +102,23 @@ class Ctx:
         return Action(data=pack(self.left.cmd, self.right.cmd))
 
 
-def _write_mp4(frames: list[np.ndarray], path: Path) -> None:
-    h, w = frames[0].shape[:2]
-    ff = os.environ.get("FFMPEG", "ffmpeg")
-    proc = subprocess.Popen(
-        [ff, "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{w}x{h}", "-r", str(CONTROL_HZ),
-         "-i", "-", "-c:v", "libx264", "-crf", "14", "-preset", "slow", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(path)],
-        stdin=subprocess.PIPE,
-    )
-    for f in frames:
-        proc.stdin.write(np.ascontiguousarray(f[..., :3], dtype=np.uint8).tobytes())
-    proc.stdin.close()
-    proc.wait()
+class _Mp4:
+    """Streams frames to ffmpeg as they arrive (no frames held in memory)."""
+
+    def __init__(self, path: Path, w: int, h: int):
+        ff = os.environ.get("FFMPEG", "ffmpeg")
+        self.proc = subprocess.Popen(
+            [ff, "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{w}x{h}", "-r", str(CONTROL_HZ),
+             "-i", "-", "-c:v", "libx264", "-crf", "12", "-preset", "slow", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(path)],
+            stdin=subprocess.PIPE,
+        )
+
+    def add(self, f: np.ndarray) -> None:
+        self.proc.stdin.write(np.ascontiguousarray(f[..., :3], dtype=np.uint8).tobytes())
+
+    def close(self) -> None:
+        self.proc.stdin.close()
+        self.proc.wait()
 
 
 def run(task_path: str, out_dir: str, max_steps: int = 2400, cam_width: int = 320, cam_height: int = 176,
@@ -130,14 +135,21 @@ def run(task_path: str, out_dir: str, max_steps: int = 2400, cam_width: int = 32
     obs = emb.reset(Scene(id="demo", instruction="demo"))
     ctx = Ctx(emb)
     script = emb.task.module.demo_script(ctx)
-    frames: dict[str, list] = {}
+    writers: dict[str, _Mp4] = {}
     info: dict = {}
     steps, ended, success = 0, None, False
 
     def snap(o):
         if record:
             for cam, img in o.images.items():
-                frames.setdefault(cam, []).append(np.asarray(img))
+                img = np.asarray(img)
+                if cam not in writers:
+                    writers[cam] = _Mp4(out / f"{cam}.mp4", img.shape[1], img.shape[0])
+                    if cam == "top_cam":
+                        import imageio
+
+                        imageio.imwrite(out / "setup.png", img[..., :3])
+                writers[cam].add(img)
 
     snap(obs)
     while steps < max_steps:
@@ -164,12 +176,8 @@ def run(task_path: str, out_dir: str, max_steps: int = 2400, cam_width: int = 32
     score = 1.0 if success else float(info.get("score", 0.0) or 0.0)
     result = {"task_score": score, "success": success, "steps": steps, "final_info": {k: v for k, v in info.items()
                                                                                        if isinstance(v, int | float | bool)}}
-    if record:
-        for cam, fr in frames.items():
-            _write_mp4(fr, out / f"{cam}.mp4")
-        import imageio
-
-        imageio.imwrite(out / "setup.png", frames["top_cam"][0])
+    for w in writers.values():
+        w.close()
     (out / "result.json").write_text(json.dumps(result, indent=1))
     print("RESULT", json.dumps(result))
     return result
@@ -182,7 +190,7 @@ if __name__ == "__main__":
     ap.add_argument("--max-steps", type=int, default=2400)
     ap.add_argument("--no-record", action="store_true")
     ap.add_argument("--device", default="cuda:0")
-    ap.add_argument("--size", default="1280x720", help="camera frame size WxH for recorded runs")
+    ap.add_argument("--size", default="1920x1080", help="camera frame size WxH for recorded runs")
     a = ap.parse_args()
     small = a.no_record  # debug runs: tiny camera frames, much faster rendering
     run(a.task, a.out, a.max_steps, record=not a.no_record, device=a.device,
