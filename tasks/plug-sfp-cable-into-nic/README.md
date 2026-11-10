@@ -10,6 +10,8 @@ axis, tilts its hand until the plug stands upright, carries it over the card, an
 13.75 x 8.6 mm (the AIC models' own sizes), so the clearance is about 0.13 mm a side. Credit rises with depth; the plug must
 be aligned with the port axis, and the other port scores 0.
 
+**Media.** `dream_run.mp4`: the Dream-1 run (score 0.0), top view plus both wrist cameras. `demo.mp4`: the scripted demo (score 1.0, `demo_result.json`), side, top and both wrist cameras.
+
 ## Terms, for readers new to fibre patching
 - **NIC (network interface card):** the plug-in card that connects a server to the network. Real NICs and switches have
   several SFP ports side by side along one edge; here the card stands upright with two of them facing up.
