@@ -107,7 +107,7 @@ def _write_mp4(frames: list[np.ndarray], path: Path) -> None:
     ff = os.environ.get("FFMPEG", "ffmpeg")
     proc = subprocess.Popen(
         [ff, "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{w}x{h}", "-r", str(CONTROL_HZ),
-         "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(path)],
+         "-i", "-", "-c:v", "libx264", "-crf", "14", "-preset", "slow", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(path)],
         stdin=subprocess.PIPE,
     )
     for f in frames:
@@ -182,7 +182,8 @@ if __name__ == "__main__":
     ap.add_argument("--max-steps", type=int, default=2400)
     ap.add_argument("--no-record", action="store_true")
     ap.add_argument("--device", default="cuda:0")
+    ap.add_argument("--size", default="1280x720", help="camera frame size WxH for recorded runs")
     a = ap.parse_args()
     small = a.no_record  # debug runs: tiny camera frames, much faster rendering
     run(a.task, a.out, a.max_steps, record=not a.no_record, device=a.device,
-        cam_width=64 if small else 320, cam_height=36 if small else 176)
+        cam_width=64 if small else int(a.size.split("x")[0]), cam_height=36 if small else int(a.size.split("x")[1]))
