@@ -33,7 +33,6 @@ from __future__ import annotations
 import importlib.abc
 import importlib.machinery
 import math
-import os
 import sys
 from dataclasses import dataclass, field
 
@@ -411,7 +410,7 @@ def _spawn_cable(prim_path: str, cfg, translation=None, orientation=None, **kwar
         rot1 = (1.0, 0.0, 0.0, 0.0)
         if fr:
             rel = local[i][1].T @ local[i - 1][1]
-            rot1 = _wxyz(rel.T if os.environ.get("FIBRE_SWAP") else rel)
+            rot1 = _wxyz(rel)
         joint(seg_paths[i - 1], seg_paths[i], f"bend_{i}", L / 2, -L / 2, bend=True, rot1=rot1)
 
     plug_pose = {}  # each plug's pose in the root's frame

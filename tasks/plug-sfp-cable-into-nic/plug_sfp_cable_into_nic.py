@@ -1,5 +1,4 @@
-"""On the station table: a PCIe network card leans back in a slanted cradle in front of the left arm, turned 8 degrees from
-square to the arms, its two SFP ports at its upper edge facing up and toward the arms at 45 degrees. An SFP-to-SC fibre
+"""On the station table: a PCIe network card leans back 45 degrees in a slanted cradle in front of the left arm, square to the arms, its two SFP ports at its upper edge facing up and toward the arms at 45 degrees. An SFP-to-SC fibre
 patch cable lies across the table: its SC plug (blue) rests in a small tray, fixed in place, and its SFP plug (gold) lies
 in a slanted holder to the left of the card, tip down at 45 degrees like the card's ports, the cable leaving its back end
 and draping to the tray. The robot must lift the SFP plug out and plug it, tip first, all the way into the card's left port
@@ -7,7 +6,6 @@ and draping to the tray. The robot must lift the SFP plug out and plug it, tip f
 """
 
 import math
-import os
 import pathlib
 import sys
 
@@ -24,7 +22,7 @@ TOP = TABLE_TOP[SCENE]
 
 R_CARD = sc.card_rotation()  # the card's upright frame in the world: leaned back 45 degrees, turned 8
 R_HOLD = sc.ry(-sc.CARD_TILT)  # the holder's frame: leaned the same way, not turned; the plug's axis is its z
-CLEARANCE = float(os.environ.get("SFP_CLEARANCE", "0.0"))  # m a side added to the AIC port; 0 = the AIC model's own size
+CLEARANCE = 0.0  # m a side added to the AIC port; 0 = the AIC model's own size
 CARD_Z_CUT = -0.032  # WHY: only the card's upper part is modelled (the rest sits inside the cradle)
 BASE_T = 0.006
 SKIN, METAL, GOLD, STEEL, BLUE = (0.10, 0.45, 0.20), (0.72, 0.74, 0.77), (0.85, 0.70, 0.20), (0.35, 0.36, 0.38), (0.10, 0.30, 0.75)
@@ -89,7 +87,7 @@ def _holder_boxes():
     ]
 
 
-FUNNEL = float(os.environ.get("SFP_FUNNEL", "0.002"))  # m: how far the lead-in flares outward at the port mouth (0 = none)
+FUNNEL = 0.002  # m: how far the lead-in flares outward at the port mouth (0 = none)
 
 
 def _funnel():
@@ -161,10 +159,10 @@ def _drape():
 
 
 CABLE = cable(
-    "cable", start=tuple(_E), path=_drape(), radius=CABLE_R, friction=1.2, segment=0.02, cable_mass=float(os.environ.get("CABLE_M", "0.012")), color=(0.95, 0.80, 0.10),
-    bend_stiffness=float(os.environ.get("CABLE_K", "0.1")), bend_damping=float(os.environ.get("CABLE_D", "0.01")),
+    "cable", start=tuple(_E), path=_drape(), radius=CABLE_R, friction=1.2, segment=0.02, cable_mass=0.012, color=(0.95, 0.80, 0.10),
+    bend_stiffness=0.1, bend_damping=0.01,
     start_plug=Plug(size=SC_BODY, mass=0.04, color=BLUE), end_plug=Plug(size=SFP_BODY, mass=0.02, color=GOLD, extras=(SFP_HEAD,)),
-    anchor_start=os.environ.get("SFP_ANCHOR", "1") == "1",
+    anchor_start=True,
 )
 
 
@@ -207,17 +205,6 @@ def _plug(state):
 def score(objects):
     st = objects["cable"]
     tip, axis = _plug(st)
-    if os.environ.get("SFP_DEBUG"):  # development only: one line per step with the plug's tip in the card's frame
-        with open(os.environ["SFP_DEBUG"], "a") as f:
-            loc = R_CARD.T @ (tip - CARD_POS)
-            a = R_CARD.T @ axis
-            f.write(f"tip(x,y)mm=({(loc[0]-sc.BAY_X)*1000:.2f},{(loc[1]-sc.BAY_Y[0])*1000:.2f}) depth={(sc.MOUTH_Z-loc[2])*1000:.1f} "
-                    f"axis=({a[0]:.3f},{a[1]:.3f},{a[2]:.3f}) plug_z={st.end_plug[2]:.3f} sfp={st.end_plug.round(4).tolist()} "
-                    f"sc={st.start_plug.round(4).tolist()} seg0={st.points[0].round(4).tolist()} segN={st.points[-1].round(4).tolist()}\n")
-    if os.environ.get("SFP_CHAIN"):  # development only: how far each segment is from its designed place
-        dev = np.linalg.norm(st.points - np.stack([c for c, _ in CABLE.frames()]), axis=1) * 1000
-        with open(os.environ["SFP_CHAIN"], "a") as f:
-            f.write(" ".join(f"{d:.1f}" for d in dev) + "\n")
     return sc.score(tip, axis, CARD_POS, R_CARD, plug_z=float(st.end_plug[2]), table_z=TOP)
 
 
@@ -259,10 +246,6 @@ def demo_script(ctx):
     yield from arm.move(out, yaw=0.0, duration=1.5, label="draw out along its axis")
     for _ in range(10):
         yield  # let the grip settle
-    if os.environ.get("DEMO_HOLD"):  # development only: hold the plug still to see whether it swings in the pads
-        yield from arm.move(out + np.array([0.0, 0.0, 0.05]), yaw=0.0, duration=1.0, label="lift test")
-        yield from arm.wait(3.0)
-        return
     st = ctx.states()["cable"]
     tip, axis = _plug(st)
     d0 = tip - out  # from the TCP to the tip while the grip is at yaw 0; it turns with the wrist
@@ -286,8 +269,8 @@ def demo_script(ctx):
         yaw_now = float(np.clip(yaw_now - YAW_GAIN * a_[1] / 0.707, yaw_c - 0.08, yaw_c + 0.08))
         return R_CARD.T @ (tip_ - MOUTH)  # (across, along the bays, up the port axis): depth = -z
 
-    GAIN = float(os.environ.get("SFP_GAIN", "0.05"))
-    YAW_GAIN = float(os.environ.get("SFP_YAW_GAIN", "0.08"))
+    GAIN = 0.05
+    YAW_GAIN = 0.08
 
     def step_to(depth, gain=None):
         """One control step: feed the tip's error from the port's centre line back into the TCP, and its depth error too."""
@@ -326,8 +309,6 @@ def demo_script(ctx):
             break
         step_to(depth)
         yield from arm.move(cmd, yaw=yaw_now, duration=0.05, label="push in along the port axis")
-        if os.environ.get("SFP_IK"):
-            print(f"[ik] depth_target={depth*1000:.1f} measured_depth={-e[2]*1000:.2f} across={e[0]*1000:.2f} along={e[1]*1000:.2f} held={held}", flush=True)
     for _ in range(20):
         yield
     yield from arm.grip(FINGER_OPEN, 0.6)
