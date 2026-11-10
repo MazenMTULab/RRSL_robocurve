@@ -19,6 +19,6 @@
   "run_limit": "2,400 steps (2 minutes at 20 Hz)",
   "reset_notes": "Lay the SFP plug back in its slanted holder, tip down against the stop, and the SC plug in its tray; the cable settles in about 1.5 s.",
   "fidelity": "Plug and port sizes are the box colliders of the public AIC SFP module and NIC card models (Apache-2.0), unmodified: the port is 14.0 x 9.0 mm inside and the plug body 13.75 x 8.6 mm, so the clearance is about 0.13 mm a side in width, as in the real models. The one addition is a 2 mm flared lead-in at each port mouth, which a real cage also has, to let an open-loop robot land the plug in simulation. The plug stops at about 41.5 mm depth where its latch shoulder meets the port, so full depth is scored at 40 mm. Only the card's upper part is modelled, and it is set about 5 cm lower than a real card in a chassis so the arm can reach it with the plug upright. The cable is a 12 g soft chain of rigid segments, not a real fibre: no twisting stiffness, lighter than a real patch cable, and no latch spring, click, electrical or optical contact, so no insertion force. The plug shapes are boxes, not the detailed meshes.",
-  "scores": "Dream-1 run: TBD; demo: 1.0",
+  "scores": "Dream-1 run: 0.0 (model video, 3 views); demo: 1.0 (scripted run, 4 views; its result is in demo_result.json)",
   "media": ""
 }

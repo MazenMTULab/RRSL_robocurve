@@ -1,6 +1,6 @@
 # Plug a fibre patch cable's SFP end into a network card
 
-**Status: draft. Scripted demo reaches 1.0 in Isaac Sim (3 of 3 runs, 1068 steps each, both arms). No Dream-1 run, media ID or review yet.**
+**Status: draft. Scripted demo reaches 1.0 in Isaac Sim (3 of 3 runs, 1068 steps each, both arms). Dream-1 run: 0.0 (step limit reached). No media ID or review yet.**
 
 A full SFP-to-SC fibre patch cable lies on the table. Its SC plug (blue) rests in a fixed tray; its SFP plug (gold) lies in
 a slanted holder, tip down at 45 degrees. A network card stands upright on a foot, its two SFP ports facing straight up. The
@@ -77,6 +77,7 @@ upright in the air, and a second arm is part of the solution.
 - `sfp_cable_scoring.py`: the scorer as pure functions. `test_sfp_cable_scoring.py` tests it (`python -m pytest`).
 - `fibrekit.py`: the cable (a chain of capsule segments on joints, with a plug at each end), built from `scenekit.py` boxes.
 - `cabledemo.py`: runs a task's `demo_script` (closed loop on the plug's measured pose) and writes videos, `setup.png`, `result.json`.
+- `demo_result.json`: the scorer's result for the scripted demo run (score 1.0, success, 1,068 steps).
 - `geometry.json`, `gen_geometry.py`: box tables from the AIC SDFs (Apache-2.0) and the script that builds them.
 
 ## Run a trial
