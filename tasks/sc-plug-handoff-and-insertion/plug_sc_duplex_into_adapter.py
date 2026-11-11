@@ -15,11 +15,11 @@ import numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import sc_scoring as sc
 from fibrekit import Plug, cable
-from scenekit import Shape
+from scenekit import Shape, env as scene_env, on_reset
 from yam_arena.task_file import TABLE_TOP, Box
 
 SCENE = "station"
-SUCCESS_HOLD_S = 20.0  # seated and at rest for 3 s: the plug must stay in after the gripper lets go
+SUCCESS_HOLD_S = 20.0  # seated and at rest after release: the plug must stay in after the gripper lets go
 TOP = TABLE_TOP[SCENE]
 GEOM = sc.GEOM
 NIC = GEOM["nic"]
@@ -167,8 +167,69 @@ def _plug(state):
     return sc.plug_tip(state.start_plug, state.start_plug_quat)
 
 
+_HANDOFF = {
+    "donor_held": False,
+    "receiver_held": False,
+    "transfer_pending": False,
+    "transfer_tcp": None,
+    "transfer_plug": None,
+    "complete": False,
+}
+
+
+@on_reset
+def _reset_handoff(_environment):
+    _HANDOFF.update(
+        donor_held=False,
+        receiver_held=False,
+        transfer_pending=False,
+        transfer_tcp=None,
+        transfer_plug=None,
+        complete=False,
+    )
+
+
+def _handoff_complete(st) -> bool:
+    """Require measured two-arm overlap, then donor release with receiver still closed and near the plug."""
+    if _HANDOFF["complete"]:
+        return True
+    environment = scene_env()
+    if environment is None:
+        return False
+    from yam_arena.runtime import tcp_world
+
+    centre = np.asarray(st.start_plug, float)
+    robots = {side: environment.unwrapped.scene[f"{side}_robot"] for side in ("left", "right")}
+    near, closed = {}, {}
+    for side, robot in robots.items():
+        near[side] = float(np.linalg.norm(tcp_world(robot) - centre)) <= 0.04
+        ids = robot.find_joints(["joint7", "joint8"], preserve_order=True)[0]
+        fingers = robot.data.joint_pos[0, ids].detach().cpu().numpy()
+        closed[side] = bool(np.all(fingers >= -0.014))
+    _HANDOFF["donor_held"] |= near["right"] and closed["right"]
+    _HANDOFF["receiver_held"] |= near["left"] and closed["left"]
+    # Opening and retreating alone could be faked by closing a gripper beside
+    # the plug. After donor release, require the connector to follow a receiver
+    # movement, which is evidence that the receiver actually retained it.
+    donor_released = not near["right"] and not closed["right"]
+    if (_HANDOFF["donor_held"] and _HANDOFF["receiver_held"] and donor_released
+            and near["left"] and closed["left"] and not _HANDOFF["transfer_pending"]):
+        _HANDOFF["transfer_pending"] = True
+        _HANDOFF["transfer_tcp"] = tcp_world(robots["left"]).copy()
+        _HANDOFF["transfer_plug"] = centre.copy()
+    if _HANDOFF["transfer_pending"] and near["left"] and closed["left"]:
+        tcp_delta = tcp_world(robots["left"]) - _HANDOFF["transfer_tcp"]
+        plug_delta = centre - _HANDOFF["transfer_plug"]
+        if (float(np.linalg.norm(tcp_delta)) >= 0.008
+                and float(np.linalg.norm(plug_delta - tcp_delta)) <= 0.004):
+            _HANDOFF["complete"] = True
+    return _HANDOFF["complete"]
+
+
 def score(objects):
     st = objects["cable"]
+    if not _handoff_complete(st):
+        return 0.0
     tip, axis, up = _plug(st)
     return sc.score(tip, axis, up, PORT_POS, plug_z=float(st.start_plug[2]), table_z=TOP)
 
