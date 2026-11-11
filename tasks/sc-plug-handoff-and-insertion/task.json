@@ -1,0 +1,21 @@
+{
+  "title": "Hand off and insert a duplex fibre connector",
+  "category": "Societal relevance",
+  "keywords": [
+    "bimanual",
+    "handoff",
+    "fibre connector",
+    "SC",
+    "precision insertion",
+    "cable"
+  ],
+  "instruction": "Pass the blue duplex SC connector from one arm to the other. The receiving arm must secure it before the first arm releases. Then insert the connector fully into the adapter port, let go, and retreat.",
+  "context": "Fibre patching requires coordinated two-hand transfer and precise connector insertion. This task evaluates a robot transferring a cable-bound connector between arms before seating it.",
+  "setup": "A PCIe network card stands upright on a foot at the left of the table, with a gold SFP plug fixed in its nearer port. A blue duplex SC connector rests on the table 25 mm from the mouth of a duplex SC adapter on a pedestal. A yellow flexible fibre cable connects the SC connector to the fixed SFP plug. The adapter mouth faces the left arm; its keyed opening is upright. The two arms begin at their ready poses. All coordinates and object dimensions are specified in the scene file; object jitter is zero.",
+  "scoring": "0 if the SC connector is not inserted. Score uses measured connector pose relative to the adapter: 0.25 at 2 mm insertion, 0.5 at 6 mm, and 1.0 at 11 mm, provided the tip is within 1 mm of the port centre line, plug tilt is at most 3 degrees for full credit (10 degrees for partial credit), and roll is at most 5 degrees. The simulator success condition also requires the plug to remain at full score and below 0.03 m/s for 20 seconds. The handoff sequence is specified by the instruction and demonstrated in the scripted feasibility video; the current pose-based scorer does not independently verify the handoff event.",
+  "run_limit": "2,400 control steps (120 seconds at 20 Hz)",
+  "reset_notes": "Return the SC connector to its marked starting pose, with the cable draped along the recorded setup. The SFP end remains fixed in the card port.",
+  "fidelity": "The connector and adapter use collision boxes derived from public AIC duplex SC models. The simulation omits optical function and connector latch details. The flexible cable is represented by a chain of rigid segments with bending joints. The SFP end is fixed to make the task focus on two-arm transfer and SC insertion.",
+  "scores": "Dream-1 run: not completed (session repeatedly expired before first action); scripted handoff demo: 1.0, 1,467 steps with 20-second post-release hold",
+  "media": "pending"
+}
