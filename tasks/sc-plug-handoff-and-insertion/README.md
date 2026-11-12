@@ -1,6 +1,6 @@
 # Hand off and insert a duplex fibre connector
 
-The right arm picks up the cable-bound duplex SC connector and presents it to the left arm. The left arm secures the connector; the right arm releases and retreats. The left arm then levels the connector, aligns it with the adapter, inserts it, releases it, and retreats. The SFP end remains seated in the network card.
+At a fibre service bench, the free end of a transceiver-terminated lead is handed between arms and seated in a keyed duplex coupler while the attached cable remains constrained by the fixed transceiver. The right arm picks up the cable-bound duplex SC connector and presents it to the left arm. The left arm secures it before the right arm releases and retreats; the left arm then levels and inserts the connector, releases it, and retreats. This focuses on transfer and retention of the cable's SC end, distinct from seating the SFP end in a network-card cage. The SFP end remains seated in the network card.
 
 ## Run and score
 
@@ -20,8 +20,8 @@ The run limit is 2,400 control steps at 20 Hz. Layout is fixed; object jitter is
 
 ## Scoring
 
-The measured handoff state gates all insertion credit. Both grippers must close near the connector; after the donor opens and retreats, the receiver must remain closed and move at least 8 mm while the plug follows within 4 mm. Insertion scores 0.25 at 2 mm, 0.5 at 6 mm, and 1.0 at 11 mm tip depth past the mouth. The tip must stay within 1 mm of the port centreline, roll within 5 degrees, and tilt within 10 degrees for partial credit or 3 degrees for full credit. The task holds full score and connector speed below 0.03 m/s for 20 seconds to register success.
+The measured handoff state gates all insertion credit. Both TCPs must be within 40 mm of the connector while both grippers are closed; after the donor opens and retreats beyond 40 mm, the receiver must remain closed and move at least 8 mm while the plug follows within 4 mm. Insertion scores 0.25 at 2 mm, 0.5 at 6 mm, and 1.0 at 11 mm tip depth past the mouth. The tip must stay within 1 mm of the port centreline, roll within 5 degrees, and tilt within 10 degrees for partial credit or 3 degrees for full credit. The task holds full score and connector speed below 0.03 m/s for 20 seconds to register success.
 
 ## Demonstrated result
 
-The local scripted run scored 1.0 in 1,467 steps. It held the connector seated after release and retreat for 22 seconds; the task's success condition requires a continuous 20-second hold. `demo.mp4` and `setup.png` show the recorded feasibility run. The Dream-1 attempt stalled before the first action, so it produced no score or model video.
+The recorded scripted run scored 1.0 in 1,467 steps and held the connector seated after release and retreat for 22 seconds; success requires a continuous 20-second hold. The Dream-1 evaluation was stopped at 425 steps after repeated expired-session responses, so it has no final score. The scripted video, setup screenshot and any Dream run video belong in the task-board media upload, not in this repository. The recorded scripted score predates the latest receiver-retention scorer gate and must be reconfirmed by a simulator run before submission.
