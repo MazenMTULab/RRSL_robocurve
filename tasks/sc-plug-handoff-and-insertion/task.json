@@ -16,6 +16,6 @@
   "run_limit": "2,400 control steps (120 seconds at 20 Hz)",
   "reset_notes": "Return the SC connector to its marked starting pose, with the cable draped along the recorded setup. The SFP end remains fixed in the card port.",
   "fidelity": "Collision geometry is adapted from public Apache-2.0 NIC, SFP module, SC plug and duplex adapter models. The simulation omits optical function and connector latch details. The flexible cable is a chain of rigid segments with bending joints. The SFP end is fixed; this task focuses on handoff and seating the SC end, rather than insertion of the SFP end into its cage.",
-  "scores": "Dream-1 trial: incomplete (stopped after 425 steps following repeated expired-session responses; no final score reported); scripted handoff demo: 1.0 (1,467 steps; 22-second post-release hold, recorded before the current scorer gates)",
-  "media": "pending"
+  "scores": "Dream-1 run: 0.0 (2,400 steps, step limit reached); scripted demo: 1.0 (1,676 steps; current handoff, retention, release and continuous 20-second success checks passed)",
+  "media": "M-ME9C7Q"
 }
