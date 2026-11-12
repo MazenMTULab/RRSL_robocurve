@@ -233,7 +233,7 @@ def _handoff_complete(st) -> bool:
 
 def score(objects):
     st = objects["cable"]
-    if not _handoff_complete(st):
+    if not _handoff_complete(st) or not _released_and_retreated(st):
         return 0.0
     tip, axis, up = _plug(st)
     return sc.score(tip, axis, up, PORT_POS, plug_z=float(st.start_plug[2]), table_z=TOP)
