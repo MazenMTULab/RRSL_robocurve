@@ -2,6 +2,18 @@
 
 At a fibre service bench, the free end of a transceiver-terminated lead is handed between arms and seated in a keyed duplex coupler while the attached cable remains constrained by the fixed transceiver. The right arm picks up the cable-bound duplex SC connector and presents it to the left arm. The left arm secures it before the right arm releases and retreats; the left arm then levels and inserts the connector, releases it, and retreats. This focuses on transfer and retention of the cable's SC end, distinct from seating the SFP end in a network-card cage. The SFP end remains seated in the network card.
 
+## Importance and manipulation challenge
+
+This benchmark combines inter-arm object transfer with precision insertion under a cable constraint. It abstracts fibre-lead handling at a network equipment service bench: the SFP end stays connected while the free SC end is transferred and seated. Its contribution is the coordinated sequence of presentation, overlapping grasps, donor release, receiver retention, keyed alignment, insertion and stable release. It differs from seating an SFP module in a cage by requiring transfer of the opposite cable end before insertion into a duplex coupler.
+
+The duplex connector behaves like a coupled dual peg-in-hole insertion: two mating features share one rigid body and must enter the corresponding adapter channels together. Translation or rotation that improves one side also moves the other. The keyed housing constrains roll, and a small angular error can bring one side into contact before the other. The supplied collision geometry has approximately 0.35 mm lateral clearance per side and about 0.14 mm at the top in the aligned insertion configuration. These are nominal model clearances, not universal commercial SC specifications or the scorer's positional tolerance.
+
+The two arms must coordinate access to the same connector. The donor presents it while the receiver establishes its grasp; the receiver must retain it after the donor releases and retreats. The attached cable changes shape as the connector moves and can disturb alignment or pull it back after release. The benchmark therefore evaluates transfer timing, grasp retention, precision alignment and stable completion as one sequence. A handoff is explicitly required here; the task does not claim that every real SC installation requires two arms. This makes it useful for comparing bimanual policies on whether a successful transfer supports a subsequent precision operation, rather than judging either skill in isolation.
+
+## Fidelity and interpretation
+
+The model represents mechanical contact and cable-constrained manipulation, not optical connection quality. Connector latches and compliant materials are simplified, and the cable is a chain of rigid segments with bending joints. The geometric shoulder seat implies about 13.4 mm tip depth; previous simulation observations settled near 11.9 mm because of contact behaviour. Full credit uses an explicit 11 mm depth threshold. The released-state alignment and 20-second stable-success conditions guard against counting a transient push as episode success. Gripper closure, proximity and connector-following motion are observable proxies for retention, rather than direct contact-force measurements. Simulation feasibility does not establish real-hardware reliability.
+
 ## Run and score
 
 From the repository root, with `yam-isaac-lab-arena` installed:
