@@ -1,0 +1,21 @@
+{
+  "title": "Hand off and insert a duplex fibre connector",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "handoff",
+    "fibre connector",
+    "SC",
+    "precision insertion",
+    "cable"
+  ],
+  "instruction": "The right arm passes the cable-bound blue duplex SC connector to the left arm. The left arm must secure it before the right arm releases and retreats. Then insert the connector fully into the adapter port, release it, and retreat.",
+  "context": "At a fibre service bench, a transceiver-terminated lead's free SC end must be handed between arms and seated in a keyed duplex adapter while its cable remains constrained by the fixed transceiver. The task evaluates retention through the handoff as well as aligned insertion.",
+  "setup": "Fixed station-table layout; zero object jitter; run seed 0. Objects: upright PCIe network-card upper section (about 21 x 121 x 65 mm collider envelope; green PCB, steel port cages) on a 140 x 150 x 6 mm steel foot and 6 x 120 x 24 mm steel backplate; gold-coloured SFP module (47.3 x 13.75 x 8.6 mm, 20 g) fixed in the nearer cage. Blue polymer duplex SC plug (25.97 x 25 x 10.1 mm envelope, 40 g) starts flat on the table, with its tip facing the adapter and 25 mm from the mouth. Yellow polymer-jacketed fibre cable (2.5 mm radius, 12 g) joins the plug to the fixed SFP module and is simulated as 20 mm flexible segments. Silver-grey duplex SC adapter (48.6 x 27.4 x 9.3 mm envelope; housing material simplified to rigid collision shapes) stands on a 34 x 30 x 40.3 mm steel pedestal and an 80 x 60 x 6 mm steel base; its keyed opening faces the left arm. Both YAM arms start in their ready poses. Exact collider geometry and world poses are in this task's scene and geometry files.",
+  "scoring": "No insertion credit until transfer is demonstrated. Both TCPs must be within 40 mm of the plug simultaneously while both grippers are closed; after the right-arm donor opens and retreats beyond 40 mm, the left-arm receiver must remain closed and within 40 mm, then move at least 8 mm while the plug follows within 4 mm. This checks a dual-grip overlap and retention after transfer. Insertion credit is awarded after both grippers open and both TCPs retreat beyond 40 mm from the plug: 0.25 at 2 mm, 0.5 at 6 mm and 1.0 at 11 mm tip depth past the adapter mouth. The tip must remain within 1 mm of the port centreline and roll within 5 degrees; tilt may be at most 10 degrees for partial credit and 3 degrees for full credit. Episode success additionally requires plug speed below 0.03 m/s continuously for 20 seconds.",
+  "run_limit": "2,400 control steps (120 seconds at 20 Hz)",
+  "reset_notes": "Return the SC connector to its marked starting pose, with the cable draped along the recorded setup. The SFP end remains fixed in the card port.",
+  "fidelity": "Collision geometry is adapted from public Apache-2.0 NIC, SFP module, SC plug and duplex adapter models. The simulation omits optical function and connector latch details. The flexible cable is a chain of rigid segments with bending joints. The SFP end is fixed; this task focuses on handoff and seating the SC end, rather than insertion of the SFP end into its cage.",
+  "scores": "Dream-1 run: 0.0 (2,400 steps, step limit reached); scripted demo: 1.0 (1,676 steps; current handoff, retention, release and continuous 20-second success checks passed)",
+  "media": "M-ME9C7Q"
+}
