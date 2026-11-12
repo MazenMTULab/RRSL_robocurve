@@ -170,6 +170,7 @@ def _plug(state):
 _HANDOFF = {
     "donor_held": False,
     "receiver_held": False,
+    "dual_grip": False,
     "transfer_pending": False,
     "transfer_tcp": None,
     "transfer_plug": None,
@@ -182,6 +183,7 @@ def _reset_handoff(_environment):
     _HANDOFF.update(
         donor_held=False,
         receiver_held=False,
+        dual_grip=False,
         transfer_pending=False,
         transfer_tcp=None,
         transfer_plug=None,
@@ -208,11 +210,14 @@ def _handoff_complete(st) -> bool:
         closed[side] = bool(np.all(fingers >= -0.014))
     _HANDOFF["donor_held"] |= near["right"] and closed["right"]
     _HANDOFF["receiver_held"] |= near["left"] and closed["left"]
+    _HANDOFF["dual_grip"] |= (
+        near["right"] and closed["right"] and near["left"] and closed["left"]
+    )
     # Opening and retreating alone could be faked by closing a gripper beside
     # the plug. After donor release, require the connector to follow a receiver
     # movement, which is evidence that the receiver actually retained it.
     donor_released = not near["right"] and not closed["right"]
-    if (_HANDOFF["donor_held"] and _HANDOFF["receiver_held"] and donor_released
+    if (_HANDOFF["donor_held"] and _HANDOFF["receiver_held"] and _HANDOFF["dual_grip"] and donor_released
             and near["left"] and closed["left"] and not _HANDOFF["transfer_pending"]):
         _HANDOFF["transfer_pending"] = True
         _HANDOFF["transfer_tcp"] = tcp_world(robots["left"]).copy()
@@ -234,8 +239,32 @@ def score(objects):
     return sc.score(tip, axis, up, PORT_POS, plug_z=float(st.start_plug[2]), table_z=TOP)
 
 
+def _released_and_retreated(st) -> bool:
+    """Require both arms to open and clear the plug after seating it."""
+    environment = scene_env()
+    if environment is None:
+        return False
+    from yam_arena.runtime import tcp_world
+
+    centre = np.asarray(st.start_plug, float)
+    for side in ("left", "right"):
+        robot = environment.unwrapped.scene[f"{side}_robot"]
+        ids = robot.find_joints(["joint7", "joint8"], preserve_order=True)[0]
+        fingers = robot.data.joint_pos[0, ids].detach().cpu().numpy()
+        opened = bool(np.all(fingers <= -0.040))
+        retreated = float(np.linalg.norm(tcp_world(robot) - centre)) > 0.04
+        if not (opened and retreated):
+            return False
+    return True
+
+
 def success(objects):
-    return score(objects) >= 1.0 and float(np.linalg.norm(objects["cable"].lin_vel)) < 0.03
+    st = objects["cable"]
+    return (
+        score(objects) >= 1.0
+        and float(np.linalg.norm(st.lin_vel)) < 0.03
+        and _released_and_retreated(st)
+    )
 
 
 def distance(objects):

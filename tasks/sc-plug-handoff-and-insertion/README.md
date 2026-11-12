@@ -7,7 +7,7 @@ At a fibre service bench, the free end of a transceiver-terminated lead is hande
 From the repository root, with `yam-isaac-lab-arena` installed:
 
 ```bash
-inspect-robots run --embodiment yam_arena -E task=tasks/sc-plug-handoff-and-insertion/plug_sc_duplex_into_adapter.py -E object_jitter=0 -E control_hz=20 -E cam_width=320 -E cam_height=176 --seed 0 --scorer task_score --max-steps 2400 --instruction "Pass the blue duplex SC connector from the right arm to the left arm. The left arm must secure the connector before the right arm releases it. Then insert the connector into the adapter port, release it, and retreat."
+inspect-robots run --embodiment yam_arena --policy dream -E task=tasks/sc-plug-handoff-and-insertion/plug_sc_duplex_into_adapter.py -E object_jitter=0 -E control_hz=20 -E cam_width=320 -E cam_height=176 --seed 0 --scorer task_score --max-steps 2400 --store-frames --log-dir task_runs/sc_plug_dream --no-prompt --instruction "The right arm passes the cable-bound blue duplex SC connector to the left arm. The left arm secures it before the right arm releases and retreats. Insert the connector into the adapter port, release it, and retreat."
 ```
 
 The scripted feasibility demo is generated with:
@@ -20,7 +20,7 @@ The run limit is 2,400 control steps at 20 Hz. Layout is fixed; object jitter is
 
 ## Scoring
 
-The measured handoff state gates all insertion credit. Both TCPs must be within 40 mm of the connector while both grippers are closed; after the donor opens and retreats beyond 40 mm, the receiver must remain closed and move at least 8 mm while the plug follows within 4 mm. Insertion scores 0.25 at 2 mm, 0.5 at 6 mm, and 1.0 at 11 mm tip depth past the mouth. The tip must stay within 1 mm of the port centreline, roll within 5 degrees, and tilt within 10 degrees for partial credit or 3 degrees for full credit. The task holds full score and connector speed below 0.03 m/s for 20 seconds to register success.
+The measured handoff state gates all insertion credit. Both TCPs must be within 40 mm of the connector simultaneously while both grippers are closed; after the donor opens and retreats beyond 40 mm, the receiver must remain closed and within 40 mm, then move at least 8 mm while the plug follows within 4 mm. Insertion scores 0.25 at 2 mm, 0.5 at 6 mm, and 1.0 at 11 mm tip depth past the mouth. The tip must stay within 1 mm of the port centreline, roll within 5 degrees, and tilt within 10 degrees for partial credit or 3 degrees for full credit. Episode success requires both grippers open, both TCPs more than 40 mm from the seated plug, and connector speed below 0.03 m/s continuously for 20 seconds.
 
 ## Demonstrated result
 

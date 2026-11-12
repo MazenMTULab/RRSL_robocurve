@@ -1,6 +1,13 @@
 {
  "units": "m",
- "source": "AIC SFP Module and NIC Card model.sdf colliders (Apache-2.0)",
+ "source": "Collision shapes adapted from AIC model assets, Apache-2.0.",
+ "sources": {
+  "network_card": "aic_assets/models/NIC Card/model.sdf",
+  "sfp_module": "aic_assets/models/SFP Module/model.sdf",
+  "sc_connector": "aic_assets/models/SC Plug/model.sdf",
+  "sc_adapter": "aic_assets/models/SC Port/model.sdf",
+  "license": "Apache-2.0 (AIC assets package)"
+ },
  "nic": {
   "boxes": [
    {
