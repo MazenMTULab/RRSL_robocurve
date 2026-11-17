@@ -64,7 +64,7 @@ The fixed layout for evaluation and media is `BOARD_CORNER=FL`. The FR
 layout is an optional mirror check.
 
 * **`yam_scripted` demo (`FL`):** `417` control steps (`20.85 s` simulated at `20 Hz`) -> `task_score: 1.0`, `outcome: succeeded` (`1.0` held for `1.0 s` / `20` steps).
-* **Prior `yam_scripted` demo (`FR`, before the scoring update):** `416` control steps (`20.80 s` simulated at `20 Hz`) -> `task_score: 1.0`, `outcome: succeeded`.
+* **Dream-1 baseline (`FL`):** `2,400` control steps (`120 s` simulated at `20 Hz`) -> `task_score: 0.0`, ending at the action limit.
 * **One-arm negative control (`DEMO_NO_LIFT=1`, `FL`):** `500` control steps (`25.0 s`) -> `task_score: 0.25` (pushing the pad without lifting the corner hits the weighted brass stud at `~3.4 cm` offset; the board never levels).
 * **Run limit:** `2,400` control steps (`2 minutes` at `20 Hz`).
 * **Seed:** The submission uses the fixed front-left corner and `object_jitter=0`. `BOARD_CORNER=FR` enables an optional mirror check. Environment toggles for testing: `DEMO_NO_LIFT=1` (idle lifting arm control), `BOARD_TRACE=1` (periodic step telemetry to stderr).
@@ -78,6 +78,18 @@ layout is an optional mirror check.
 | `0.50` | Pad flat within `2.5 cm` of bare foot, or bare foot bottom lifted `>= 6 mm` above tabletop while pad is within `6.0 cm` |
 | `0.25` | Pad moved `>= 2.5 cm` toward bare corner (or within `9.0 cm` of bare foot) |
 | `0.0` (latched) | Mug tilts `> 25°` or leaves its board spot (`> 4.5 cm` / below board), or board tilts `> 18°` or drifts `> 6.0 cm` horizontally for 2 consecutive steps (`0.1 s`) |
+
+## Relevance and feasibility
+
+Replacing a missing support foot is a recognizable household maintenance operation. The loose mug makes the load-transfer step observable. One arm creates clearance under the loaded corner while the other seats the pad, then the board must support itself after release. The geometry is tabletop scale and uses parallel-gripper grasps on the board edge and pad.
+
+The scripted simulation demonstrates full score within 417 of the allowed 2,400 steps. Hardware construction dimensions are listed below. Physical performance remains to be tested. Real trials should use room-temperature water and controlled motions with hands clear of the robot workspace. The simulation represents the mug and its fill as a rigid weighted body. The scorer measures mug position and tilt, and liquid motion is outside the simulation.
+
+## Submitted video views
+
+The scripted demo is a synchronized 1920 × 720 composite at 20 fps. The large left panel shows the short foot, lifting clearance, pad insertion, and final support. The upper-right panel gives an oblique view, and the lower-right panel shows both arms and the mug from above. Grippers temporarily obscure parts of the insertion in individual views.
+
+The Dream-1 recording preserves the overhead, left-wrist, and right-wrist observation views in that order from left to right. Each view is 320 × 176 pixels, giving a 960 × 176 composite at 20 fps. Wrist views move with the grippers and can face away from the work area. The recording covers the full 2,400-step trial.
 
 ## Real-world build notes
 
