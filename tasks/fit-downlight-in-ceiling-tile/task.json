@@ -1,0 +1,21 @@
+{
+  "title": "Fit a spring-clip mini downlight into its hole in a ceiling tile: press both clips back flat, push it in, and let them spring out behind the tile",
+  "category": "Impact on jobs",
+  "keywords": [
+    "electrician",
+    "downlight",
+    "torsion spring clips",
+    "ceiling tile",
+    "hidden state",
+    "compliant mechanism"
+  ],
+  "instruction": "Fit the downlight into the hole in the ceiling tile so that its rim sits flush on the tile and its spring clips hold it from behind.",
+  "context": "Fitting recessed downlights is routine work for electricians (about 800,000 in the US) and lighting installers: the fitting's own torsion-spring clips are the only thing holding it in the ceiling, they spring out wider than the hole, and the installer's instruction is to press both back against the body and push the light into the hole. From the room side a light whose clips have not opened behind the board looks almost the same as a correctly fitted one.",
+  "setup": "Metres; world x forward, y left, z up; origin midway between the arm bases; table top z = 0.7475. (1) Two softwood battens, 50 mm tall x 25 mm wide x 600 mm long, lying along y on the table at x = 0.100 to 0.125 and x = 0.655 to 0.680, y = -0.380 to 0.220. (2) Suspended-ceiling tile, mineral fibre, white, 600 x 600 x 15 mm, laid face up across the battens: x 0.090 to 0.690, y -0.380 to 0.220, face at z = 0.8125; a 36 mm round hole cut through it, centred at (0.300, -0.080). In the simulation the tile and battens are fixed (the real tile weighs 1.6 kg and lies loose). (3) Mini LED downlight (as the KSR Mimas mini baffle downlight: 40 mm rim, 36 mm cut-out, 55 mm overall), free, 49 g: white rim 40 mm across and 3 mm thick; aluminium body 32 mm across and 52 mm long behind the rim; two spring-steel torsion clips on opposite sides of the body, each pivoting 20 mm behind the rim's back face, with an arm 24 mm long, 6 mm wide and 1 mm thick; at rest each arm springs out to 140 degrees from lying flat along the body (its end 32 mm from the light's axis, 2 mm behind the rim), with a spring of 0.015 N m/rad (0.04 N m, 1.7 N at the arm's end, to hold it pressed flat). The light stands on its back end on the tile, rim up, at (0.230, -0.170), its clips toward +y and -y. Friction (static/dynamic): tile 0.6/0.5, light 0.4/0.35, clips 0.35/0.3.",
+  "scoring": "Measured on the light against the hole. Credit counts only with every gripper at least 30 mm from the light and the light still (under 0.5 mm per 50 ms step) for 1 s. In the hole: the light's axis within 4 mm of the hole's centre, tilted no more than 20 degrees, and both clips' pivots at least 3 mm below the tile's face. 0.25: in the hole. 0.5: in the hole with at least one clip sprung out behind the tile (its pivot below the tile's back face and its arm at least 60 degrees out from the body). 1.0: both clips out behind the tile, and the rim flush (its back face within 1.5 mm of the tile's face) and within 3 degrees of square. Otherwise 0: not in the hole (including resting on the hole with its clips still out on the tile's face), still held or moving, or knocked off the table (below the table top) at any time.",
+  "run_limit": "1,600 steps (80 s at 20 Hz); the scripted demo takes 524 steps",
+  "reset_notes": "Push the light out of the tile from behind with both clips pressed flat (they spring back to rest), and stand it rim up on its mark beside the hole. Nothing is consumed.",
+  "fidelity": "The light is a rigid rim and body with two hinged clip arms on torsion springs; spring rate, body diameter and clip size are typical values, not measured. The hole is a 32-sided polygon. The tile is fixed and rigid (a real one is loose and its cut edge crumbles). It lies face up on the bench, as when fitting a lifted-out tile; overhead the clips would also hold the light against gravity. No wiring.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "TODO: written by tools/upload_media.py"
+}
