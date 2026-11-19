@@ -1,0 +1,22 @@
+{
+  "title": "Sharpen a clamped mower blade's edge with a two-handed file, cutting only on the push stroke along the bevel",
+  "category": "Impact on jobs",
+  "keywords": [
+    "lawn mower blade",
+    "mill file",
+    "sharpening",
+    "groundskeeping",
+    "maintenance",
+    "tool use",
+    "bimanual"
+  ],
+  "instruction": "Sharpen the mower blade's cutting edge with the file.",
+  "context": "Landscaping and groundskeeping workers (about 914,000 in the US, BLS May 2022) keep their mowers' blades sharp, and a dull blade tears grass rather than cutting it. With a hand file on a clamped blade, one hand pushes the handle and the other steadies and presses the file near its tip. The file cuts only on the push stroke, so it is lifted for the return, since dragging it back dulls its teeth. It must ride the edge's existing 30 degree bevel. The instruction states none of this.",
+  "setup": "Positions are in cm from the midpoint between the two arm bases, with x forward, y to the robot's left and the table top at z 0. (1) Wooden block 22 x 12 x 11 cm, center x 40, y -6, fixed. (2) Mower blade: 4 mm steel, 5.2 cm wide, lying flat on the block along x from x 28 forward (its far end runs on past the block), clamped by a red C-clamp at x 49. Its cutting edge runs along x on the blade's +y side at y 0, 11.4 cm up; the edge's bevel is ground at 30 degrees, facing up and toward +y. The 6 cm of edge to sharpen (x 28.5 to 34.5) is colored with blue marker ink, with tick marks every 1 cm. (3) A 10-inch (25 cm) mill file, 2.5 cm wide and 6 mm thick, on a 10 cm wooden handle (2.6 cm across), 0.30 kg, lying on the table along y at x 17, its blade's middle at y 3, tip toward +y.",
+  "scoring": "A cutting pass over a 1 cm length of the edge: the file's face on it (within 2.5 mm, and within 10 degrees of the 30 degree bevel) while the file moves toward its tip faster than 1 cm/s. A length is filed after 2 passes (the ink is gone and bright steel shows). From the final state, held 1 s: 1.0 with all 6 lengths filed; 0.5 with 3 to 5; 0.25 with 1 or 2; 0 with none. A drag is the file sliding 1 cm or more back toward its handle while on the edge; 3 or more drags cap the score at 0.5. Measured from the ink (each 1 cm length bright or not) and from video for the drags. Where the arms and file end up does not count. Possible scores: 0, 0.25, 0.5, 1.0.",
+  "run_limit": "1,200 steps (1 minute at 20 Hz)",
+  "reset_notes": "Re-ink the 6 cm of edge with the marker and put the file back on the table at its start spot. In real trials the blade is filed only lightly (two passes per length), so one blade lasts many trials.",
+  "fidelity": "Metal removal is not simulated: a pass is read from the file's face on the edge, at the bevel's angle, moving toward its tip. The blade, clamp and block are one fixed body. The file is a rigid free body, gripped by friction.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-UHYUZA"
+}
