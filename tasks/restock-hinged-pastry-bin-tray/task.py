@@ -37,13 +37,13 @@ INSTRUCTION = (
     "leaving the empty tray flat on the counter mat and the bin lid closed without letting it slam."
 )
 
-# -- randomized staging side (L = left arm holds lid / right swaps trays; R = mirrored) ---------------------------------
+# -- fixed arm assignment, default L (set BIN_SIDE=R for the mirrored layout) -------------------------------------
 SIDES = ("L", "R")
 
 
 def _draw_side() -> str:
     env = os.environ.get("BIN_SIDE", "").strip().upper()
-    return env if env in SIDES else random.SystemRandom().choice(SIDES)
+    return env if env in SIDES else "L"
 
 
 BIN_SIDE = _draw_side()

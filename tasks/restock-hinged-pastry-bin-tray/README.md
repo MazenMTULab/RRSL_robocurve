@@ -2,6 +2,8 @@
 
 Bimanual tabletop task for `yam_arena`: one YAM arm lifts and holds an unpowered gravity-closing rear-hinged clear-acrylic bakery bin lid while the opposite arm removes the empty stainless inner tray onto a counter mat and places a stocked pastry tray flat inside the bin, before the holding arm lowers the lid shut without slamming.
 
+**Layout:** the starting layout is fixed. The default is side L; set `BIN_SIDE=R` to run the mirrored layout (used by the demo checks below).
+
 ## Files
 
 - `task.py`: Scene geometry (`HingedBin`, stainless `empty_tray`, pastry-loaded `stocked_tray`, slate `tray_mat`), `score`/`success` logic with latched slam/spill hazards, and symmetric `demo()` (`BIN_SIDE=L|R`, plus `DEMO_NO_HOLD=1` and `DEMO_DROP_DOOR=1` negative controls).
