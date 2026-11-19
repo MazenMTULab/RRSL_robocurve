@@ -2,6 +2,8 @@
 
 Bimanual tabletop task for `yam_arena` (`station` scene): a 1:1 clear PET hinged berry clamshell punnet (`16.0 x 12.0 x 6.5 cm` closed, `525 g` packed with eight ripe strawberries) rests on the station table with its rear-hinged lid sprung open (`~24.4 deg`) and a front sliding snap catch parked open (`+/-3.2 cm`, randomized `HAND_SIDE=L|R`). One YAM arm must gently compress and hold the lid's structural side shoulder flush onto the base rim (`<= 3.0 deg`) without slamming or reaching into the berries, while the opposite arm pinches and slides the front snap catch cleanly home (`0.0 +/- 0.4 cm`) so the punnet remains latched shut after both grippers release and hold clear for `1.0 s` (`20` steps at `20 Hz`).
 
+**Layout:** the starting layout is fixed. The default is side L; set `HAND_SIDE=R` to run the mirrored layout (used by the demo checks below).
+
 ## Files
 
 - `task.py`: Punnet geometry, strawberry meshes, sprung lid & sliding snap catch mechanism, `score()`/`success()` with latched slam/crush/disturbance hazards, and symmetric `demo()` (`HAND_SIDE=L|R`, plus `DEMO_NO_LATCH=1`, `DEMO_LATCH_BEFORE_CLOSE=1`, and `DEMO_CRUSH_BERRIES=1` negative controls).

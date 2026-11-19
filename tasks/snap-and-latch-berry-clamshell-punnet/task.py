@@ -42,13 +42,13 @@ INSTRUCTION = (
     "other hand to latch it shut, then release both hands clear."
 )
 
-# -- randomized arm assignment (L = left arm holds lid, right latches; R = mirrored) -----------------------------------
+# -- fixed arm assignment, default L (set HAND_SIDE=R for the mirrored layout) -------------------------------------
 SIDES = ("L", "R")
 
 
 def _draw_side() -> str:
     env = os.environ.get("HAND_SIDE", "").strip().upper()
-    return env if env in SIDES else random.SystemRandom().choice(SIDES)
+    return env if env in SIDES else "L"
 
 
 HAND_SIDE = _draw_side()
