@@ -1,0 +1,21 @@
+{
+  "title": "Fit a two-piece neck collar on a lying patient while keeping the head from rolling",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "medical",
+    "emergency care",
+    "cervical collar",
+    "manikin",
+    "sustained hold"
+  ],
+  "instruction": "Fit the two-piece neck collar on the training manikin: slide the back half under its neck, then set the front half on the front of its neck, keeping its head straight the whole time.",
+  "context": "Paramedics, emergency nurses and lifeguards fit a rigid collar on anyone with a possible neck injury, and the head must not roll while they do it; here one arm has to hold the head for the whole procedure while the other fits both halves.",
+  "setup": "On the table, an adult trauma manikin lies face up with its head toward the robot and its feet away: a head, a neck and the top of the chest, skin-toned vinyl. The head (fixed base) is 20 cm from crown to chin, 16 cm across and 16.5 cm high, with a flat face and forehead 12 x 14 cm, closed eyes and a nose; its crown is 2 cm in front of the line between the two arm bases and its centre on the midline. It can roll about its own long axis and, unless held, its weight rolls it slowly toward the robot's left (the patient's left), past 10 degrees after about 3 s, until it lies on its side. The neck (fixed) is 9 cm long and 11 cm wide, its front 11.5 cm above the table, arched so there is a 3 cm gap under it; it runs from 22 to 31 cm in front of the arm bases. The upper chest (fixed) is a 27 x 38 cm block, 14 cm high, beyond the neck. The collar is a rigid two-piece adult collar. Its back half is a flat blue foam plate, 24 cm long, 6 cm wide and 12 mm thick, with one raised end 4.5 cm high, 50 g; it lies flat on the robot's left of the neck, lined up with it, its middle 27 cm left of the midline and its raised end farthest from the neck. Its front half is a white plastic shell, 14.6 cm across and 7 cm wide, with a 3.5 cm side flange along each side (12.6 cm apart inside) and a blue chin rest 2 cm high along its head-side edge, 60 g; it stands on its flanges on the table beside the head, its centre 10 cm in front of the arm bases and 25 cm left of the midline, chin rest toward the robot. Both arms start in the ready pose.",
+  "scoring": "0.5: the back half lies flat (tilted no more than 10 degrees, lowest point within 1 cm of the table) under the neck, its centre within 1.5 cm of the neck's centre both along and across the neck. 1.0: in addition, the front half rests on the front of the neck (its shell within 8 mm of the neck's front surface), level within 10 degrees, its centre within 1.5 cm of the neck's centre both ways. The front half earns nothing without the back half. If the head ever rolls more than 10 degrees either way from straight, the score is frozen at its value at that moment. Otherwise 0.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Lay both collar halves back where they started and the head straight; the head starts to roll as soon as it is let go, so the trial starts on release.",
+  "fidelity": "Approximate. The manikin is rigid blocks; the head only rolls on a hinge (no nodding or turning), its weight modelled as a weak spring (about 0.04 N m near straight) so a light press on the forehead holds it. The collar is two rigid pieces: foam does not bend round the neck, the front shell is flat, and the hook-and-loop straps are not modelled, so fitting means placing both halves correctly. A fastened collar is not scored.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-XDLWC9"
+}
