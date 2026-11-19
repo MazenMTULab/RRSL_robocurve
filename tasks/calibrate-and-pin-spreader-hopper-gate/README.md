@@ -23,7 +23,7 @@ Run the scripted demonstration in Isaac Lab-Arena (`SIDE=L` or `SIDE=R`):
 SIDE=L inspect-robots run --embodiment yam_arena --policy yam_scripted \
   -E task=tasks/calibrate-and-pin-spreader-hopper-gate/task.py \
   -E object_jitter=0 -E control_hz=20 -E cam_width=320 -E cam_height=176 \
-  --instruction "Slide and hold the spring-loaded spreader hopper gate open to Setting 4 (4.0 cm) without over-opening, insert and seat the locking stop pin through the Setting 4 clevis slot, and release both hands clear so the gate stays pinned at 4.0 +/- 0.4 cm." \
+  --instruction "Set the spreader's gate to Setting 4 and pin it there, then let go." \
   --scorer task_score --max-steps 400 --no-prompt --log-dir ~/yam-eval/spreader-L
 ```
 
@@ -34,14 +34,14 @@ Run negative-control checks (both score `0.0`):
 SIDE=L DEMO_NO_PIN=1 inspect-robots run --embodiment yam_arena --policy yam_scripted \
   -E task=tasks/calibrate-and-pin-spreader-hopper-gate/task.py \
   -E object_jitter=0 -E control_hz=20 -E cam_width=320 -E cam_height=176 \
-  --instruction "Slide and hold the spring-loaded spreader hopper gate open to Setting 4 (4.0 cm) without over-opening, insert and seat the locking stop pin through the Setting 4 clevis slot, and release both hands clear so the gate stays pinned at 4.0 +/- 0.4 cm." \
+  --instruction "Set the spreader's gate to Setting 4 and pin it there, then let go." \
   --scorer task_score --max-steps 300 --no-prompt --log-dir ~/yam-eval/spreader-nopin
 
 # 2. Over-opening gate past Setting 5 (> 5.2 cm) -> latched spill hazard (0.0)
 SIDE=L DEMO_OVER_OPEN=1 inspect-robots run --embodiment yam_arena --policy yam_scripted \
   -E task=tasks/calibrate-and-pin-spreader-hopper-gate/task.py \
   -E object_jitter=0 -E control_hz=20 -E cam_width=320 -E cam_height=176 \
-  --instruction "Slide and hold the spring-loaded spreader hopper gate open to Setting 4 (4.0 cm) without over-opening, insert and seat the locking stop pin through the Setting 4 clevis slot, and release both hands clear so the gate stays pinned at 4.0 +/- 0.4 cm." \
+  --instruction "Set the spreader's gate to Setting 4 and pin it there, then let go." \
   --scorer task_score --max-steps 400 --no-prompt --log-dir ~/yam-eval/spreader-overopen
 ```
 
