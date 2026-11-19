@@ -1,0 +1,21 @@
+{
+  "title": "Restock a gravity-closing hinged bakery display bin without letting the lid slam",
+  "category": "Societal relatability",
+  "keywords": [
+    "bimanual",
+    "hinged-lid",
+    "gravity-closing",
+    "support-constraint",
+    "bakery",
+    "yam"
+  ],
+  "instruction": "Replace the empty inner tray inside the hinged bakery bin with the stocked pastry tray, leaving the empty tray flat on the counter mat and the bin lid closed without letting it slam.",
+  "context": "Self-serve bakery and cafe display bins use unpowered top-hinged acrylic covers that swing shut under gravity whenever released, requiring one hand to lift and hold the lid while the other swaps trays cleanly and lowers the cover without slamming.",
+  "setup": "Station tabletop (z = TOP = 0.75 m) with bimanual 6-DoF YAM arms (94 mm parallel-jaw grippers, bases at (0.0, +/-0.305, 0.75) m in READY pose). Fixed countertop rear-hinged bakery display bin centered at (0.304, 0.0, TOP) m (20.0 x 20.0 x 7.5 cm closed): 0.8 cm brushed stainless steel floor slab (top at Z_BIN_FLOOR = TOP + 0.008 m), clear acrylic side/rear/front walls (0.8 cm thick; 5.4 cm side walls, 4.2 cm front wall, 6.0 cm rear wall with rear hinge pillars rising to z = TOP + 0.075 m), and an unpowered 0.28 kg clear acrylic top lid (19.4 x 19.6 x 0.7 cm with 1.4 cm side/front wrap skirt and a 22.8 cm brushed steel front handlebar 1.8 cm forward of the lid edge) pivoting freely about a horizontal rear +Y hinge at (0.398, 0.0, TOP + 0.064) m across [0, 85] deg with 0.004 viscous damping and zero holding torque. Inside the bin sits a rigid stainless empty pastry tray with parchment liner (9.8 x 7.2 x 2.4 cm, 0.22 kg) at (0.267, 0.0, Z_BIN_FLOOR) m. Randomized left/right staging side via BIN_SIDE=L|R (L shown in setup screenshot): a fixed slate counter return mat (13.0 x 10.2 x 0.4 cm, top at TOP + 0.004 m) at (0.360, -/+0.235, TOP) m and a rigid stocked stainless pastry tray carrying three glazed pastries (9.8 x 7.2 x 3.8 cm overall, 0.36 kg) at (0.215, -/+0.235, TOP) m.",
+  "scoring": "Evaluated at episode end; any hazard condition (lid closing faster than 1.80 rad/s at angle <= 0.75 rad, stocked tray tilting > 18.0 deg, empty tray tilting > 22.0 deg, or either tray falling > 1.5 cm below tabletop) latches score to 0.0. Without hazards: 0.25 if empty_tray is extracted outside the bin footprint while stocked_tray stays upright (<= 18.0 deg); 0.50 if empty_tray rests flat on tray_mat (|dx| <= 5.3 cm, |dy| <= 4.1 cm, |low_z - MAT_TOP_Z| <= 8 mm, tilt <= 10.0 deg); 0.75 if empty_tray is on tray_mat and stocked_tray rests flat inside the bin (|x - 0.267| <= 2.8 cm, |y| <= 3.2 cm, |low_z - Z_BIN_FLOOR| <= 8 mm, tilt <= 10.0 deg); 1.0 if both trays are flat (tilt <= 6.0 deg), lid is closed (angle <= 4.5 deg, |door_vel| <= 0.12 rad/s), all trays are at rest (<= 0.005 m/s, <= 5.0 deg/s), and both grippers are out of contact with both trays and lid for 1.0 s (20 steps at 20 Hz).",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Rigid trays and an anchored articulated bin with a gravity-closing revolute hinge. Between trials, return the lid to 0 deg, seat empty_tray at (0.267, 0.0, Z_BIN_FLOOR) inside the bin, return stocked_tray and tray_mat to their selected BIN_SIDE (L or R) positions, and return both arms to READY.",
+  "fidelity": "Isaac Lab-Arena 0.3.1 (PhysX 240 Hz substeps, 20 Hz PD + gravity-compensation control) using the URDF kinematics and 94 mm gripper geometry of the dual YAM rig. Simplified with rigid cuboid/cylinder colliders, an unpowered viscous revolute hinge (stiffness=0, damping=0.004), fixed counter mat/bin housing, and deterministic open-loop waypoints for the demonstration.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-U88T58"
+}
