@@ -17,5 +17,5 @@
   "reset_notes": "Push the light out of the tile from behind with both clips pressed flat (they spring back to rest), and stand it rim up on its mark beside the hole. Nothing is consumed.",
   "fidelity": "The light is a rigid rim and body with two hinged clip arms on torsion springs; spring rate, body diameter and clip size are typical values, not measured. The hole is a 32-sided polygon. The tile is fixed and rigid (a real one is loose and its cut edge crumbles). It lies face up on the bench, as when fitting a lifted-out tile; overhead the clips would also hold the light against gravity. No wiring.",
   "scores": "Dream-1 run: 0.0; demo: 1.0",
-  "media": "TODO: written by tools/upload_media.py"
+  "media": "M-ECTKEU"
 }
