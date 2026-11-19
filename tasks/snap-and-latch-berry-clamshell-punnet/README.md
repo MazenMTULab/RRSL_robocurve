@@ -29,7 +29,7 @@ HAND_SIDE=L inspect-robots run \
   -E control_hz=20 \
   -E cam_width=320 \
   -E cam_height=176 \
-  --instruction "Press and hold the spring-open berry clamshell lid flush down onto the base rim with one hand without slamming or crushing the strawberries, slide the front snap catch cleanly home with the other hand to latch it shut, then release both hands clear." \
+  --instruction "Close the berry clamshell's lid and latch it shut, then let go of it." \
   --scorer task_score \
   --max-steps 500 \
   --no-prompt
