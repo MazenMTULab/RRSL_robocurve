@@ -1,0 +1,22 @@
+{
+  "title": "Cleft-graft an apple stub: set a scion at each end of the split, bark just inside the stub's, then pull the wedge",
+  "category": "Other",
+  "keywords": [
+    "grafting",
+    "orchard",
+    "nursery",
+    "cleft graft",
+    "cambium alignment",
+    "bimanual",
+    "compliant mechanism"
+  ],
+  "instruction": "Cleft-graft the two scions onto the split apple stub, one at each end of the cleft with its cambium against the stub's cambium, then remove the grafting tool.",
+  "context": "Cleft grafting is how orchardists and home growers top-work an old apple or pear tree onto a new variety, and how many nursery trees are made. A scion only takes where its cambium (the thin green layer under the bark) touches the stock's; because the stock's bark is thicker, a scion set flush with the stock's bark misses, and one pushed in toward the middle misses the other way.",
+  "setup": "Metres; world x forward, y left, z up; origin midway between the arm bases; table top z = 0.7475. (1) Low steel bench vise, bed 110 x 70 x 6 mm, jaws 14 x 70 x 20 mm, centred at (0.220, 0.000) on the table, fixed. (2) Apple rootstock stub, 38 mm across with 2.5 mm bark, standing upright in the vise jaws, its top cut flat at z = 0.8125 (65 mm above the table), centred at (0.220, 0.000), fixed below the cleft. It is split across the middle: the cleft is the plane x = 0.220, running left-right along y, 40 mm deep. Each half above the cleft's root springs shut on a hinge at the root (2.0 N m/rad per half, preloaded 3 degrees past closed). (3) Steel cleft-grafting tool, 110 g, free: a 10 x 10 mm bar 105 mm long, lying along x 14-24 mm above the stub's cut face, from 75 mm in front of the cleft to 30 mm behind it, with a wedge prong bent down at the cleft (12 mm wide, 12 mm thick at the top tapering to 1.4 mm over 25 mm, both faces at 12 degrees). The prong has been driven 21 mm into the middle of the cleft and holds it 10 mm open at the cut face. (4) Wooden scion stand, fixed: two square sockets 11 mm across and 18 mm deep, with 6 mm walls, centred at (0.175, 0.115) and (0.175, -0.115). (5) Two dormant apple scions, 6 g each, free: 9 mm across, 85 mm long, 1 mm bark; the bottom 32 mm of each is cut to a two-sided wedge, from the full 9 mm at the top of the cut to 1.8 mm at its edge, the cut faces facing front and back (along x). Each stands wedge down in a socket. Friction (static/dynamic): wood 0.5/0.45, tool 0.35/0.3.",
+  "scoring": "Measured on each scion where its axis crosses the stub's cut face. A scion is set right when: it is in the cleft (its axis within 4 mm of the cleft's middle plane, its wedge at least 20 mm down); its bark is 0.5-2.5 mm inside the stub's bark at its own end of the cleft (left scion at the left end, right scion at the right end); its top of cut is within 5 mm of the cut face; and it is within 15 degrees of upright. Each scion set right scores 0.25 while the tool's prong is still in the cleft, and 0.5 once the prong is out (its tip at least 2 mm above the cut face) and the cleft has closed on the scions. Total 0 to 1.0. Credit counts only with every gripper at least 30 mm from both scions and both scions still (under 0.5 mm per 50 ms step) for 1 s. Otherwise 0: a scion not in the cleft, at the wrong end, flush with or pushed in past the band, sunk or proud more than 5 mm, leaning more than 15 degrees, knocked off, or still held.",
+  "run_limit": "1,800 steps (90 s at 20 Hz); the scripted demo takes 883 steps",
+  "reset_notes": "Pull the scions out of the cleft (open it again with the tool's prong), stand them back in their sockets with their cut faces front and back, and drive the prong back in to hold the cleft 10 mm open. Nothing is consumed in the simulation; in the real world each trial uses a freshly split stub and freshly cut scions, or a reusable wooden trainer.",
+  "fidelity": "Dimensions follow extension-service cleft-grafting guidance, but the cleft is 40 mm deep (guides: 2-3 in) and the stub 65 mm tall to suit arm reach. Each half of the split is a rigid piece hinged at the cleft root on a 2.0 N m/rad spring (about 8 N on each scion's edge); real wood pinches far harder. Cambium is scored as geometry, not tissue: the scion's bark line against the stub's. Scions start upright in a stand and the wedge is pre-driven. No wax or tape.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-ZZTVKR"
+}
