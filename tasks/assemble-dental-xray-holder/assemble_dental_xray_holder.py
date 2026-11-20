@@ -204,7 +204,8 @@ BP_X = PADDLE[0] / 2 + BP[0] / 2
 CONN = (0.012, 0.020, 0.020)            # connector block on top of the bite plate
 CONN_Z0 = PADDLE[2] + BP[2]
 PRONG_R, PRONG_DY, PRONG_L = 0.0015, 0.004, 0.018
-HOLE = 0.0034                           # prong holes: 3.4 mm for 3.0 mm prongs (a snug slip fit)
+HOLE = 0.0032                           # prong holes: 3.2 mm for 3.0 mm prongs (0.1 mm a side: rigid bodies cannot interfere,
+                                        # so this stands in for the real 2.95 mm press-fit hole)
 LEAD = (0.0080, 0.003)                  # each hole opens to 8 mm at the top over 3 mm: a moulded lead-in
 
 
