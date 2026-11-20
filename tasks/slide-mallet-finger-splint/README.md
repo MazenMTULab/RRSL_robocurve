@@ -105,3 +105,7 @@ around the fingertip, so a seated fingertip rests a few degrees from fully strai
 the 8 degree limit). The tape that would secure the splint is not modelled. The hand rests on a wedge with the
 fingertips past its edge (so that the fingertip can droop and the gripper can reach around it); a carer would hold
 the patient's hand on a table edge the same way.
+
+## Reproducing the trainer hand
+
+The one custom mechanism is the hinged index fingertip. A reference build (printable STL files for the fingertip, the finger stub and the splint, a spring specification, assembly steps, and how to set and check the 40 degree droop and the 0.49 N spring force) is in [trainer_build/BUILD.md](trainer_build/BUILD.md); `trainer_build/make_parts.py` regenerates the parts and runs a collision sweep of the hinge. The simulation, the scorer and the scripted demo are unchanged by this documentation.
