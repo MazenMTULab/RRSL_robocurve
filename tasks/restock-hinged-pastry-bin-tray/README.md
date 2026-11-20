@@ -41,3 +41,7 @@ BIN_SIDE=L DEMO_NO_HOLD=1 inspect-robots run --embodiment yam_arena --policy yam
 ```
 
 Runtime per trial: ~85–95 s on a single L40S GPU (including environment startup; ~450 control steps at 20 Hz, 22.5 s simulated episode).
+
+## Real-world build
+
+A cut sheet, parts list, hinge checks (lid mass 0.28 kg, free swing, the 240 fps slow-motion check of the slam rule) and the washable pastry stand-in specification are in [pastry_build/BUILD.md](pastry_build/BUILD.md); `pastry_build/make_cutsheet.py` regenerates `cutsheet.svg`. The simulation, scorer and scripted demo are unchanged.
