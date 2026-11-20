@@ -61,6 +61,17 @@ THROAT = (0.015, 0.075)  # where in the jaws a branch is cut, m from the pivot
 THROAT_ANG = (-0.10, 0.50)  # and its angle in the loppers' frame (from the hook toward the open blade)
 MAX_TILT = math.radians(30.0)  # the jaws' plane within 30 degrees of square to the branch, or the blade skids
 
+# --- The cut's resistance. Nothing is cut in the physics (the branch has no collider in the jaws' path), so the force of
+# a real cut is a constant torque the blade arm's joint law applies against closing while the jaws are biting the
+# branch: from first contact (the 2 cm branch fills the gap 4.5 cm out when the jaws are 26 degrees open) down to the
+# jaws' close (4 degrees). Scaled to what one YAM arm closes and the other holds still: 4 N at the grip, where real loppers need
+# roughly thirty times that on a 2 cm hardwood branch.
+BITE_OPEN = math.radians(26.0)
+RESIST_N = 4.0  # N at the grip
+RESIST_K = 200.0  # N m/rad: the drive's gain (the torque is held by offsetting the target)
+RESIST_TORQUE = RESIST_N * GRIP_R
+
+
 P0 = (0.380, 0.004)  # the pivot as the loppers lie on the table (jaws toward +x, short of the log)
 YAW0 = -Q_OPEN / 2  # so that the two handles lie symmetric about -x
 
@@ -126,6 +137,19 @@ def _arm(jaw_ang, jaw_look, jaw_curve):
     return m, c
 
 
+class CutResist:
+    """The blade arm's joint law: free, except while the jaws bite an uncut branch in the throat, when a constant torque
+    pushes them open (resisting the close). The tracker sets the flag each step."""
+
+    def fresh(self, lk):
+        return {}
+
+    def drive(self, key, q, qd, J, mem):
+        if _CUT.get("episode") == kit.episode() and _CUT.get("resist"):
+            return q + RESIST_TORQUE / RESIST_K, RESIST_K, 0.0, 0.5
+        return q, 0.0, 0.0, 0.05
+
+
 def _loppers():
     """The loppers (free): arm A (hook, left handle) is the base; arm B (blade, right handle) turns about z at the
     pivot. A pivot bolt between them."""
@@ -133,7 +157,7 @@ def _loppers():
     ma.append(kit.cylinder((0, 0, 0), 0.010, 0.014, ALU))
     mb, cb = _arm(0.0, BLADE, 0.004)
     arm_b = kit.Link("blade_arm", "revolute", "Z", (0.0, 0.0, 0.0), lower=Q_MIN, upper=Q_MAX, start=Q_OPEN,
-                     mass=0.26, meshes=tuple(mb), colliders=tuple(cb), friction=0.05, damping=0.05)
+                     mass=0.26, meshes=tuple(mb), colliders=tuple(cb), friction=0.05, damping=0.05, law=CutResist())
     return kit.Mechanism("loppers", pos=(*P0, TOP + GRIP_T / 2 - HANDLE_Z), yaw=YAW0, size=(0.42, 0.30, 0.03),
                          mass=0.28, meshes=tuple(ma), colliders=tuple(ca), links=(arm_b,))
 
@@ -161,8 +185,7 @@ def _log():
          kit.cylinder((0, LOG_L / 2 + 0.0005, LOG_R), LOG_R - 0.004, 0.001, WOOD, axis="y"),
          kit.cylinder((0, -LOG_L / 2 - 0.0005, LOG_R), LOG_R - 0.004, 0.001, WOOD, axis="y"),
          kit.lathe([(COLLAR_R, LOG_TOP - 0.004), (COLLAR_R, LOG_TOP + COLLAR_H * 0.5),
-                    (BRANCH_R + 0.002, COLLAR_TOP)], COLLAR, center=(0, 0, 0)),
-         kit.cylinder((0, 0, COLLAR_TOP - 0.0006), BRANCH_R + 0.0026, 0.0012, RING)]
+                    (BRANCH_R + 0.002, COLLAR_TOP)], COLLAR, center=(0, 0, 0))]  # the collar: no painted line
     c = [kit.Collider((0, 0, LOG_R), size=(2 * LOG_R * 0.9, LOG_L, 2 * LOG_R))]
     top = kit.Link("branch", "revolute", "Y", (0.0, 0.0, COLLAR_TOP), lower=-0.02, upper=1.45, start=0.0, mass=0.03,
                    meshes=(kit.cylinder((0, 0, BRANCH_H / 2), BRANCH_R, BRANCH_H, BARK),
@@ -209,7 +232,7 @@ def branch_in_jaws(objects):
 
 def _track(objects):
     if _CUT["episode"] != kit.episode():
-        _CUT.update(episode=kit.episode(), step=None, height=None, why=None, prev_q=None, n=0, objects=None)
+        _CUT.update(episode=kit.episode(), step=None, height=None, why=None, prev_q=None, n=0, objects=None, resist=False)
     if objects is _CUT.get("objects"):
         return
     _CUT["objects"] = objects
@@ -224,13 +247,18 @@ def _track(objects):
               f"hit={None if hit is None else tuple(round(v, 3) for v in hit)} cut={_CUT['height']} "
               f"L={np.round(objects['left_gripper'].pos, 3)} R={np.round(objects['right_gripper'].pos, 3)}",
               flush=True)
-    if _CUT["step"] is not None or prev is None or not (prev >= CUT_OPEN > q):
-        return
-    if hit is None:
+    _CUT["resist"] = False
+    if _CUT["step"] is not None or hit is None:
         return
     r, ang, h, tilt = hit
     ang -= HOOK_ANG  # from the hook toward the blade
-    if THROAT[0] <= r <= THROAT[1] and THROAT_ANG[0] <= ang <= THROAT_ANG[1] and tilt <= MAX_TILT:
+    on_branch = LOG_TOP <= h <= COLLAR_TOP + BRANCH_H  # the jaws' plane crosses the branch itself, not air above its tip
+    in_bite = THROAT[0] <= r <= THROAT[1] and THROAT_ANG[0] <= ang <= THROAT_ANG[1] and tilt <= MAX_TILT and on_branch
+    if in_bite and CUT_OPEN < q <= BITE_OPEN:
+        _CUT["resist"] = True  # the blade is in the wood: the law resists the close
+    if prev is None or not (prev >= CUT_OPEN > q):
+        return
+    if in_bite:
         _CUT.update(step=_CUT["n"], height=h, why="cut")
 
 
@@ -275,9 +303,10 @@ def score(objects):
 
 # --- Demo: both arms lift the loppers by their grips, carry the open jaws round the branch at the cut height, then the
 # right arm closes its handle while the left holds the hook still.
-# aim 13 mm above the collar's top edge: the arms sag about 6 mm under the loppers' weight, so the cut lands near 7 mm.
-# DEMO_STUB_CM overrides it (negative controls: -0.5 for a cut into the collar, 5 for a stub).
-CUT_STUB = float(os.environ.get("DEMO_STUB_CM", "1.3")) / 100
+# aim 25 mm below the collar's top edge: the arms hold the loppers about 34 mm high under their weight and the cut's
+# resistance, so the cut lands near 9 mm above it.
+# DEMO_STUB_CM overrides it (negative controls: -3.5 for a cut into the collar, 0 for a stub).
+CUT_STUB = float(os.environ.get("DEMO_STUB_CM", "-2.5")) / 100
 
 
 def _grip_xy(pivot, yaw, ang, r=GRIP_R):

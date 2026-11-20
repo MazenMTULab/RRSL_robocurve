@@ -108,6 +108,35 @@ for z_cm, rng in ((6.0, (35, -3)), (0.7, (-3, 35)), (0.7, (35, -3))):
 s, _ = step((x, y, m.TOP + 0.3), -3)
 check(s == 0.25, "a 6 cm stub cut first, then a cut at the collar -> the first cut counts (0.25)")
 
+
+# closing above the branch's tip is not a cut: the jaws' plane must cross the branch itself
+s, _ = close_at((m.BRANCH_H + 0.02) * 100)
+check(s == 0.0 and m.stub(m._CUT["objects"]) is None, "jaws closed 2 cm above the branch's tip -> no cut, 0")
+s, _ = close_at((m.BRANCH_H - 0.01) * 100)
+check(s == 0.25, f"jaws closed 1 cm below the tip -> a cut on the branch (a long stub, 0.25) (got {s})")
+
+# the cut's resistance: the blade arm's joint law pushes the jaws open only while they bite an uncut branch
+CUTLAW = m.OBJECTS[0].links[0].law
+new_trial()
+x, y, _ = pivot_for()
+z = m.TOP + m.COLLAR_TOP + 0.007
+mem = kit._law_mem("loppers/blade_arm", m.OBJECTS[0].links[0])
+for deg, want in ((35.0, False), (27.0, False), (20.0, True), (10.0, True), (5.0, True)):
+    step((x, y, z), deg)
+    tgt = CUTLAW.drive("loppers/blade_arm", m.Q_SHUT + math.radians(deg), 0.0, {}, mem)
+    check(m._CUT["resist"] == want and (tgt[1] > 0) == want,
+          f"jaws {deg:.0f} degrees open on the branch: resisting the close is {want}")
+tgt = CUTLAW.drive("loppers/blade_arm", m.Q_SHUT + math.radians(10.0), 0.0, {}, mem)
+check(abs((tgt[0] - (m.Q_SHUT + math.radians(10.0))) * tgt[1] - m.RESIST_TORQUE) < 1e-9,
+      f"the resisting torque is {m.RESIST_TORQUE:.1f} N m ({m.RESIST_N:.0f} N at the {m.GRIP_R * 100:.0f} cm grip)")
+step((x, y, z), 3.0)  # the jaws close: the cut is made
+step((x, y, z), 3.0)
+check(m._CUT["step"] is not None and not m._CUT["resist"], "once cut, the resistance stops")
+new_trial()
+for deg in (20.0, 10.0):
+    step((m.P0[0], m.P0[1], m.TOP + 0.01), deg)
+check(not m._CUT["resist"], "loppers closing on the table, no branch in the throat: no resistance")
+
 # the loppers never brought to the branch
 new_trial()
 for k in range(12):

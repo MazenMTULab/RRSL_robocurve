@@ -1,7 +1,7 @@
 # Prune a branch off just outside its collar with two-handed bypass loppers
 
 A short log lies across the table with one branch growing up out of it. At the branch's base is its collar, the
-slight swelling where branch and trunk tissue meet, with its top edge marked by a thin yellow ring. A pair of bypass
+slight swelling where branch and trunk tissue meet, with its top edge where the swelling meets the branch (no painted mark). A pair of bypass
 loppers lies open on the table in front of the arms. "Prune this branch off the log with the loppers."
 
 Loppers need both hands. Each arm holds one handle, the tool is lifted and carried so its open jaws go round the
@@ -27,7 +27,7 @@ an L40S.
 Debug and checks:
 - `LOP_DEBUG=1` prints the jaws' opening, the pivot, where the branch crosses the jaws' plane, the cut and the grippers
   every step.
-- `DEMO_STUB_CM=<cm>` moves the demo's aim, for negative controls: `-0.5` cuts into the collar (scores 0), `5` leaves a
+- `DEMO_STUB_CM=<cm>` moves the demo's aim, for negative controls: `-3.5` cuts into the collar (scores 0), `0` leaves a
   stub (scores 0.25).
 
 Files: `task.py` (scene, branch hinge law, cut tracker, scorer, demo), `test_task.py`, and the kit it imports, copied
@@ -41,7 +41,7 @@ Positions in cm from the midpoint between the two arm bases: x forward, y to the
 |---|---|---|
 | Log | bark-covered hardwood log section, 9 cm across, 30 cm long | lying along y, centered x 52, y 0, fixed; top 9 cm up |
 | Branch | 2 cm across, 20 cm tall above its collar, a small side twig near its top | straight up from the log's top at x 52, y 0 |
-| Branch collar | bark-covered swelling 3.4 cm across, 1.2 cm tall, its top edge painted with a thin yellow ring | at the branch's base; ring 10.2 cm above the table |
+| Branch collar | bark-covered swelling 3.4 cm across, 1.2 cm tall, unmarked | at the branch's base; its top edge 10.2 cm above the table |
 | Bypass loppers | 45 cm (18 in), 0.54 kg; dark hook and polished curved blade (8 cm jaws, 6 mm thick) on a pivot bolt; aluminum shafts with green rubber grips 12 cm long, oval 2.8 x 2.0 cm, centered 30 cm from the pivot; each handle bends 14 degrees off its jaw's line (grips 14.5 cm apart with the jaws shut) | loose, lying flat, jaws open 35 degrees toward +x, pivot at x 38, y 0.4; hook handle toward the left arm, blade handle toward the right |
 
 Mechanisms:
@@ -71,8 +71,8 @@ Possible scores: 0, 0.25, 0.5, 1.0. Where the loppers and the arms end up does n
 
 Why each rule, and how a real trial checks it:
 - Just outside the collar (0 to 1.5 cm): the removal cut the standard asks for. It keeps the collar, which seals the
-  wound, and leaves no stub. Real trial: a ruler from the yellow ring to the stub's cut face.
-- Into the collar (below the ring): a flush cut, which wounds the trunk's defenses. It scores 0 however neat it is.
+  wound, and leaves no stub. Real trial: a ruler from the collar's top edge to the stub's cut face.
+- Into the collar (below the collar's top edge): a flush cut, which wounds the trunk's defenses. It scores 0 however neat it is.
 - Short stub (1.5 to 3 cm) 0.5, longer stub 0.25: the branch is off, but the stub dies back and invites decay. The
   further out, the worse.
 - The first cut counts: trimming a high stub back to the collar afterwards is the three-cut method for heavy limbs,
@@ -85,7 +85,7 @@ Why each rule, and how a real trial checks it:
 - 18-inch (45 cm) bypass loppers with rubber grips (any common garden brand).
 - A hardwood log section about 9 cm across and 30 cm long, fixed to a board, with a 2 cm socket drilled in its top.
 - Branches: 2 cm green hardwood sticks (willow or hazel cuttings, or dowel wrapped in bark-textured tape) with a
-  3.4 cm turned-wood collar ring glued at the base, bark-covered, its top edge painted yellow. Each trial uses one.
+  turned beech collar ring glued at the base. Each trial uses one 20 mm beech dowel (kiln-dried, soaked 24 h, used within 2 h).
 - Trials cut a 2 cm green stick with hand loppers on a fixed log, so they are safe. Keep the blade's sheath on between
   trials.
 
@@ -106,3 +106,9 @@ Why each rule, and how a real trial checks it:
 ## License
 
 MIT, as the repository. All meshes are built in code; no third-party assets.
+
+## Cutting resistance, bounded cuts and the branch stock
+
+- The blade arm's joint carries a law (`CutResist`): while the jaws bite an uncut branch in the throat (from 26 degrees open down to the 4 degree close, the jaws' plane within 30 degrees of square and crossing the branch) a constant torque of 1.2 N m (4 N at the 30 cm grip) pushes them open, so closing needs a steady force throughout the cut. It is scaled to what one YAM arm can close (a real cut of a 2 cm hardwood branch needs about thirty times that). It stops once the cut is made.
+- The jaws' plane must cross the branch itself: closing above its tip is not a cut (offline test).
+- The collar is unmarked. Real stock: a 20 mm beech dowel, kiln-dried then soaked 24 h, used within 2 h, in a turned beech collar ring; measure the cutting force at the grip with a luggage scale for each batch.
