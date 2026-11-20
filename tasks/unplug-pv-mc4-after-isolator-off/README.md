@@ -46,7 +46,7 @@ Positions in cm from the midpoint between the two arm bases: x forward, y to the
 | Module lead and clip | 6 mm black PV cable along the rail; black cable clip | clip at y 14.6; 4 cm of slack between the connector and the clip |
 | MC4 pair | black, 2.1 cm across: module-side half 6 cm, cable-side half 5.8 cm with two locking tabs; plugged in | on the rail along y, axis 4.7 cm up; joint at y 0, cable side toward -y |
 | Home-run cable | red 6 mm PV cable | from the cable-side half toward -y |
-| DC isolator | grey weatherproof box 12 x 12 x 9.5 cm, labeled PV DC ISOLATOR; red rotary handle bar 6.5 x 1.6 x 2.2 cm on a yellow plate on top | x 32, y -21.5, fixed; at ON (bar along x); OFF is a quarter turn counterclockwise from above (bar along y) |
+| DC isolator | grey weatherproof box 15 x 15 x 9.5 cm, lettered PV DC ISOLATOR, STRING 1, ON and OFF; red rotary handle bar 6.5 x 1.6 x 2.2 cm on a yellow plate on top | x 32, y -21.5, fixed; at ON (bar along x); OFF is a quarter turn counterclockwise from above (bar along y) |
 
 Mechanisms:
 - Isolator knob: turns about z with ON and OFF detents. Its contacts are made within 20 degrees of ON.
@@ -62,7 +62,7 @@ The two hazards are latched for the whole trial. Everything else is read from th
 
 | Outcome | Score |
 |---|---|
-| The halves part by 3 mm or more while the isolator is within 20 degrees of ON, at any time (latched): a DC arc | 0 |
+| The halves part by 3 mm or more at any time before the isolator is fully OFF (within 15 degrees of OFF) (latched): a DC arc | 0 |
 | The module's lead drawn 3 cm or more out of its clip, at any time (latched): pulled with nothing holding the module side | 0 |
 | Isolator at OFF (within 15 degrees) and the halves 2 cm or more apart | 1.0 |
 | Isolator at OFF, connector still plugged in | 0.25 |
@@ -107,3 +107,9 @@ Why each rule, and how a real trial checks it:
 ## License
 
 MIT, as the repository. All meshes are built in code; no third-party assets.
+
+## The tab squeeze, labels and the body-grip control
+
+- The two yellow locking tabs sit on the two sides of the cable-side half. It is released only when one gripper's fingers are closed (under half-open), close across the connector (along x, within 25 degrees) and touch both tabs. Closed fingers on the body ahead of the tabs, closed fingers closing along y, open fingers or a single tab do not release it, and the latch is stiff (8,000 N/m, about 360 N for a 4.5 cm pull) so an arm pulling on the body alone cannot part it.
+- The isolator's labels (PV DC ISOLATOR, STRING 1, ON, OFF) are raised block letters about 2 cm tall on the top face and on the face toward the robot, so the switch's state can be read from the scene.
+- Negative controls (simulator): `DEMO_LIVE=1` (isolator left ON) 0; `DEMO_ONE_HAND=1` (module side not held) 0; `DEMO_BODY_GRIP=1` (the right hand grips the body ahead of the tabs and pulls) 0.25, the connector stays plugged in.

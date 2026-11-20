@@ -29,8 +29,8 @@ def check(cond, what):
     fails += not cond
 
 
-DOWN = np.array([1.0, 0.0, 0.0, 0.0])
-DOWN_X = np.array([0.7071068, 0.7071068, 0.0, 0.0])  # pointing down, fingers closing along x
+DOWN = np.array([1.0, 0.0, 0.0, 0.0])  # pointing down, fingers closing along world x (the gripper's own x axis)
+DOWN_X = np.array([0.7071068, 0.7071068, 0.0, 0.0])  # pointing down, fingers closing along world y
 PARK = {"left_gripper": (0.2, 0.27, m.TOP + 0.2), "right_gripper": (0.2, -0.27, m.TOP + 0.2)}
 
 
@@ -44,7 +44,7 @@ def new_trial():
     kit._EPISODE["count"] += 1
 
 
-def step(knob=m.ON, w=0.0, lead=0.0, right=None, left=None, r_open=1.0, l_open=1.0):
+def step(knob=m.ON, w=0.0, lead=0.0, right=None, left=None, r_open=1.0, l_open=1.0, right_quat=None):
     kit._JOINTS["isolator/knob"] = kit.JointState(knob, 0.0, False)
     kit._JOINTS["string/cable_half"] = kit.JointState(-w, 0.0, False)
     kit._JOINTS["string/module_half"] = kit.JointState(-lead, 0.0, False)
@@ -57,13 +57,17 @@ def step(knob=m.ON, w=0.0, lead=0.0, right=None, left=None, r_open=1.0, l_open=1
             "string": st((m.RAIL_X, m.JOINT_Y, m.TOP)),
             "string/module_half": st((m.RAIL_X, m.JOINT_Y + m.MOD_L / 2 - lead, m.TOP + m.AXIS_Z)),
             "string/cable_half": st((m.RAIL_X, m.JOINT_Y - m.CAB_L / 2 - w - lead, m.TOP + m.AXIS_Z)),
-            **{k: st(v, DOWN_X) for k, v in g.items()}}
+            **{k: st(v, (right_quat if right_quat is not None else DOWN) if k == 'right_gripper' else DOWN_X) for k, v in g.items()}}
     kit._OPENING["right_gripper"], kit._OPENING["left_gripper"] = r_open, l_open
     return m.score(objs), m.success(objs)
 
 
 def on_cab(w=0.0, lead=0.0):
-    return (m.RAIL_X, m.JOINT_Y - 0.048 - w - lead, m.TOP + m.GRIP_Z)
+    return (m.RAIL_X, m.JOINT_Y - m.CAB_L / 2 + m.TAB_Y - w - lead, m.TOP + m.GRIP_Z)  # fingers on the two tabs
+
+
+def on_body(w=0.0, lead=0.0):
+    return (m.RAIL_X, m.JOINT_Y - m.CAB_L / 2 + 0.014 - w - lead, m.TOP + m.GRIP_Z)  # on the body, ahead of the tabs
 
 
 def on_mod():
@@ -103,9 +107,18 @@ s, _ = step(knob=m.ON, w=0.0025)
 check(m.hazards(m._T["objects"])[0] is None, "2.5 mm of play with the isolator ON -> no arc yet")
 new_trial()
 s, _ = step(knob=math.radians(25), w=0.01)
-check(m.hazards(m._T["objects"])[0] is None, "knob 25 degrees off ON (contacts open) -> no arc")
-s, _ = step(knob=math.radians(25), w=0.03)
-check(s == 0.0, "... but the knob between ON and OFF at the end -> not OFF, 0")
+check(m.hazards(m._T["objects"])[0] is not None, "knob 25 degrees off ON, parted: not fully OFF -> arc latched")
+s, _ = step(knob=m.OFF, w=0.04)
+check(s == 0.0, "... and OFF afterwards does not undo it -> 0")
+new_trial()
+s, _ = step(knob=math.radians(60), w=0.01)
+check(m.hazards(m._T["objects"])[0] is not None, "knob 60 degrees (between ON and OFF), parted -> arc latched")
+new_trial()
+s, _ = step(knob=m.OFF - math.radians(10), w=0.04)
+check(m.hazards(m._T["objects"])[0] is None and s == 1.0, "knob 10 degrees short of OFF (within the 15 degree OFF zone), parted -> no arc, 1.0")
+new_trial()
+s, _ = step(knob=m.OFF - math.radians(20), w=0.01)
+check(m.hazards(m._T["objects"])[0] is not None, "knob 20 degrees short of OFF (outside the OFF zone), parted -> arc latched")
 
 # pulled by the module's lead (nothing holding the module side)
 new_trial()
@@ -131,6 +144,22 @@ tgt = CAB.law.drive("string/cable_half", -0.001, 0.0, {}, mem)
 check(tgt[1] == 0.0 and tgt[3] == m.SEAL_DAMP, "squeezed: it slides against the seal's drag")
 step(knob=m.OFF, right=on_cab(), r_open=0.8)
 check(not m._T["pinched"], "fingers touching but open (80%) do not squeeze the tabs")
+
+# the squeeze must be on BOTH tabs, with closed fingers closing across the connector
+new_trial()
+step(knob=m.OFF, right=on_body(), r_open=0.2)
+check(not m._T["pinched"], "closed fingers on the connector body ahead of the tabs do not release it")
+step(knob=m.OFF, right=on_cab(), r_open=0.2, right_quat=DOWN_X)
+check(not m._T["pinched"], "closed on the tabs but closing along y (not across the connector) does not release it")
+step(knob=m.OFF, right=(m.RAIL_X, m.JOINT_Y + 0.10, m.TOP + m.GRIP_Z), r_open=0.2)
+check(not m._T["pinched"], "closed fingers away from the connector do not release it")
+step(knob=m.OFF, right=on_cab(), r_open=0.2)
+check(m._T["pinched"], "closed fingers across the connector on both tabs release it")
+# a body grip cannot take the halves apart: the latch holds, so nothing parts
+tgt = CAB.law.drive("string/cable_half", 0.0, 0.0, {}, mem)
+step(knob=m.OFF, right=on_body(), r_open=0.2)
+tgt = CAB.law.drive("string/cable_half", 0.0, 0.0, {}, mem)
+check(tgt[1] >= 500, "a body grip leaves the cable-side half latched")
 
 d = m.demo()
 check(abs(sum(w.duration for w in d["left"]) - sum(w.duration for w in d["right"])) < 1e-9, "both plans same length")
