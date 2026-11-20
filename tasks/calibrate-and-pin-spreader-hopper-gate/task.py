@@ -41,13 +41,13 @@ INSTRUCTION = (
     "the gate stays pinned at 4.0 +/- 0.4 cm."
 )
 
-# -- randomized symmetric staging side (L: left arm pulls gate, right arm inserts pin; R: mirrored) --------------------
+# -- fixed arm assignment, default L (set SIDE=R for the mirrored layout) -------------------------------------
 SIDES = ("L", "R")
 
 
 def _draw_side() -> str:
     env = os.environ.get("SIDE", "").strip().upper()
-    return env if env in SIDES else random.SystemRandom().choice(SIDES)
+    return env if env in SIDES else "L"
 
 
 SIDE = _draw_side()

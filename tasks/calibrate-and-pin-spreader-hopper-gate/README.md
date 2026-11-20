@@ -2,6 +2,8 @@
 
 Bimanual tabletop task for `yam_arena`: one YAM arm slides and holds a spring-returned horizontal spreader hopper metering gate (`PrismaticJoint` with `k = 70.0 N/m`, `damping = 4.0 N*s/m` pulling toward `0.0 cm` closed) open to Setting 4 (`4.0 cm`) without exceeding the Setting 5 (`> 5.2 cm`) spill limit, while the opposite arm picks a locking stop pin (`10 x 10 x 44 mm` tang, `28 x 28 x 8 mm` stop collar) from a staging stand and seats it vertically through the `20 x 20 mm` Setting 4 clevis bore so the gate stays pinned at `4.0 +/- 0.4 cm` after both grippers release and hold clear for `1.0 s` (`20` steps at `20 Hz`).
 
+**Layout:** the starting layout is fixed. The default is side L; set `SIDE=R` to run the mirrored layout (used by the demo checks below).
+
 ## Files
 
 - `task.py`: 1:1 rotary spreader hopper gate assembly (`18.0 x 14.0 x 10.0 cm`), `pin_stand`, `stop_pin`, `score`/`success` logic with latched over-opening/dropped-pin hazards, and symmetric `demo()` (`SIDE=L|R`, plus `DEMO_NO_PIN=1` and `DEMO_OVER_OPEN=1` negative controls).
