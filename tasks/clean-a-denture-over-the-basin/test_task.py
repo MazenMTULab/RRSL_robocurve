@@ -67,8 +67,8 @@ def zone_center(k):
 TANG = {0: (1.0, 0.0), 1: (0.0, 1.0), 2: (0.0, 1.0)}
 
 
-def brush_zone(k, den=HOLD, strokes=4, amp=0.008, h=-0.002, dq=(0, 0, 0, 1), bq=Q_BRUSH, n=6):
-    """Back-and-forth strokes on zone k with the denture's origin at den."""
+def brush_point(k, den=HOLD, strokes=4, amp=0.008, h=0.0035, dq=(0, 0, 0, 1), bq=Q_BRUSH, n=6):
+    """Back-and-forth strokes at ONE spot of zone k with the denture's origin at den (the old way: no longer enough)."""
     c = den + m._rot(dq) @ zone_center(k)
     t = np.array([*TANG[k], 0.0])
     if k == 1:
@@ -81,6 +81,29 @@ def brush_zone(k, den=HOLD, strokes=4, amp=0.008, h=-0.002, dq=(0, 0, 0, 1), bq=
         a, b = (-amp, amp) if s % 2 == 0 else (amp, -amp)
         for f in np.linspace(a, b, n):
             out = step(den, c + t * f + up * h, dq, bq)
+    return out
+
+
+def zone_path(k, den, dq, skip_last=0, skip_first=0):
+    """The zone's teeth points in the world (the denture at den), the path ends extended 2 mm."""
+    pts = [den + m._rot(dq) @ np.asarray(p, float) for p in m.ZONE_PTS[k]]
+    pts = pts[skip_first:len(pts) - skip_last]
+    d0 = pts[0] - pts[1] if len(pts) > 1 else np.array([0.0, 1.0, 0.0])
+    d1 = pts[-1] - pts[-2] if len(pts) > 1 else np.array([0.0, 1.0, 0.0])
+    pts = [pts[0] + 0.002 * d0 / np.linalg.norm(d0)] + pts + [pts[-1] + 0.002 * d1 / np.linalg.norm(d1)]
+    return pts
+
+
+def brush_zone(k, den=HOLD, strokes=4, h=0.0035, dq=(0, 0, 0, 1), bq=Q_BRUSH, n=4, skip_last=0, skip_first=0, **_):
+    """Strokes along the whole arch of zone k (forward, back, forward, ...) with the denture's origin at den."""
+    path = zone_path(k, den, dq, skip_last, skip_first)
+    up = m._rot(dq)[:, 2]
+    out = None
+    for s in range(strokes):
+        seq = path if s % 2 == 0 else path[::-1]
+        for p0, p1 in zip(seq, seq[1:]):
+            for f in np.linspace(0.0, 1.0, n, endpoint=False):
+                out = step(den, p0 + (p1 - p0) * f + up * h, dq, bq)
     return out
 
 
@@ -105,7 +128,7 @@ all_zones()
 s, ok = park(HOLD)
 check(s == 0.5 and not ok, f"all three zones brushed over the basin, denture still held -> 0.5 (got {s})")
 s, ok = park(IN_CUP)
-check(s == 1.0 and ok and m._T["strokes"] == [4, 4, 4], f"...then into its cup -> 1.0 (got {s}, {m._T['strokes']})")
+check(s == 1.0 and ok and all(x >= 4 for x in m._T["strokes"]), f"...then into its cup -> 1.0 (got {s}, {m._T['strokes']})")
 
 new_trial()
 all_zones(COUNTER)
@@ -126,17 +149,48 @@ all_zones(strokes=3)
 s, _ = park(IN_CUP)
 check(s == 0.0 and m._T["strokes"] == [3, 3, 3], f"3 strokes on each zone (4 needed) -> 0 (got {s})")
 
+# four strokes at one spot of each zone are no longer enough: the whole arch must be brushed
 new_trial()
-all_zones(h=0.006)
-check(m._T["strokes"] == [0, 0, 0], "bristles 6 mm above the teeth (air brushing) -> no strokes")
+for k in range(3):
+    brush_point(k)
+s, _ = park(IN_CUP)
+check(s == 0.0 and m._T["strokes"] == [4, 4, 4], f"four strokes at one spot per zone -> no zone done, 0 (got {s}, {m._T['strokes']})")
+new_trial()
+for k in range(3):
+    brush_zone(k, skip_last=2)
+s, _ = park(IN_CUP)
+check(s < 1.0, f"each arch brushed short of its last two teeth -> not complete (got {s})")
+new_trial()
+brush_zone(0); brush_zone(1)
+brush_zone(2, skip_last=2)
+s, _ = park(IN_CUP)
+check(s == 0.25, f"the near side's last two back teeth missed -> only the front and far side done, 0.25 (got {s})")
+new_trial()
+brush_zone(0); brush_zone(1); brush_zone(2)
+s, _ = park(IN_CUP)
+check(s == 1.0 and all(len(m._T["cov"][k]) == len(m.ZONE_PTS[k]) for k in range(3)), f"every tooth point brushed (back teeth included) -> 1.0 (got {s})")
+new_trial()
+all_zones(den=COUNTER)
+check(all(len(c_) == 0 for c_ in m._T["cov"]), "brushing over the counter marks no teeth as brushed")
+
+new_trial()
+all_zones(h=0.009)
+check(m._T["strokes"] == [0, 0, 0], "bristles 9 mm above the teeth (air brushing) -> no strokes")
 new_trial()
 all_zones(h=-0.008)
 check(m._T["strokes"] == [0, 0, 0], "bristle tips 8 mm into the teeth (not possible) -> no strokes")
 new_trial()
 all_zones(h=-0.004)
-check(m._T["strokes"] == [4, 4, 4], "bristles pressed 4 mm (bent) -> counts")
+check(m._T["strokes"] == [0, 0, 0], "bristle tips 4 mm into the teeth (rigid bristles cannot go that deep) -> no strokes")
 new_trial()
-all_zones(amp=0.004)
+all_zones(h=0.005)
+check(all(x >= 4 for x in m._T["strokes"]), "bristle tips resting 5 mm above the drawn tops (in contact) -> counts")
+new_trial()
+all_zones(h=-0.002)
+check(m._T["strokes"] == [0, 0, 0], "bristle tips 2 mm into the teeth (rigid bristles cannot get there) -> no strokes")
+new_trial()
+for k in range(3):
+    brush_point(k, amp=0.004)
 check(m._T["strokes"] == [0, 0, 0], "8 mm jiggles -> no strokes (1 cm needed)")
 new_trial()
 qb = np.array([0, 0, 0, 1.0])

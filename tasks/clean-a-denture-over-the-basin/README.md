@@ -56,14 +56,19 @@ The basin, cup and towels are fixed. The denture and brush are loose.
 
 ## Scoring
 
-The teeth's chewing surfaces are scored in three zones: the front teeth (within 40 degrees either side of the middle
-of the front curve) and each side's teeth (the rest of the curve and the back teeth). Everything except the drop is
-read from the final state, which must hold 1 s (`SCORE_OVER = "end"`).
+The teeth's chewing surfaces are scored in three zones: the front teeth, the far side's teeth and the near side's teeth.
+Everything except the drop is read from the final state, which must hold 1 s (`SCORE_OVER = "end"`).
 
-- A stroke: the bristles on a zone's teeth while the brush moves 1 cm or more one way across them, with the middle of
-  the denture's front curve over the inside of the basin. "On the teeth" means the bristle tips are between 5 mm into
-  the teeth (bristles bent) and 2 mm above them, and the teeth face up and the bristles down, within 30 degrees.
-- A zone is brushed after 4 strokes.
+- A stroke: the bristle tips in contact with a zone's teeth while the brush moves 1 cm or more one way across them, with
+  the middle of the denture's front curve over the inside of the basin. The bristles are rigid and collide over their
+  whole length, so the teeth stop the tips and push back on the brush; the colliders' margin leaves the tips resting 0.5
+  mm below to 5.5 mm above the drawn tops, which is the band that counts ("in contact"). The teeth face up and the
+  bristles down, within 30 degrees. A brush held above the band, or over the counter, scores no stroke.
+- A zone is brushed after 4 strokes AND once the moving bristles have passed over every tooth point of its arch (the
+  middle of the bristles within 4 mm of the point): the front teeth at 7 points from -45 to 45 degrees of the front curve
+  every 15 degrees; the far side at 55, 70 and 85 degrees of the curve; the near side at 55, 70 and 85 degrees and the
+  back teeth every 4 mm out to 16 mm along the leg. The far heel's last teeth are under the holding gripper's fingers,
+  so the far side stops at the curve. Four strokes at one spot of a zone earn nothing (offline test).
 
 | Outcome | Score |
 |---|---|

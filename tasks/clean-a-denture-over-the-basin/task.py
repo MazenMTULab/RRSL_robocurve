@@ -66,7 +66,9 @@ BRUSH0 = (0.140, -0.050)  # the head's center on its towel; the handle runs towa
 ZONES = ("front", "far side", "near side")
 STROKES = 4  # strokes a zone needs
 STROKE_MIN = 0.010  # a stroke: the brush moving 1 cm or more one way across the teeth, bristles on them
-TIP_BAND = (-0.005, 0.002)  # the bristle tips from 5 mm into the teeth (bristles bent) to 2 mm above them
+TIP_BAND = (-0.0005, 0.0055)  # the tips resting on the teeth: the rigid bristles stop 0.5 to 5 mm above the drawn tops (the colliders' margin), so no tip goes lower and a brush hovering higher is not touching
+COVER_STEP = 0.0005  # m: the brush moving at least 0.5 mm in a control step is brushing, not resting
+COVER_R = 0.004  # m: a tooth point is brushed when the middle of the bristles passes within 4 mm of it along the brush
 UPRIGHT = math.cos(math.radians(30.0))  # teeth up, bristles down, within 30 degrees
 GAP_STEPS = 4  # bristles off a zone for under 0.2 s is still the same stroke
 DROP_V = 0.5  # m/s downward: falling, not being lowered
@@ -124,9 +126,10 @@ def _brush():
     m = [kit.box((0, 0, 0), (HEAD_L, HEAD_W, HEAD_T), BRUSH_LOOK),
          kit.box((0, 0, -HEAD_T / 2 - BRISTLE_H / 2), (BRISTLE_L, BRISTLE_W, BRISTLE_H), BRISTLE),
          kit.box((hx, 0, HANDLE_Z), (hl, HANDLE_W, HANDLE_H), BRUSH_LOOK)]
-    # The bristles collide only in their top 4 mm: the rest bend (their tips are read by the scorer, not simulated).
+    # The bristles collide over their whole length (rigid: real bristles bend), so the teeth stop the tips and push back
+    # on the brush with a real contact force: a stroke needs the bristle tips in contact with the teeth.
     c = [kit.Collider((0, 0, 0), size=(HEAD_L, HEAD_W, HEAD_T)),
-         kit.Collider((0, 0, -HEAD_T / 2 - 0.002), size=(BRISTLE_L, BRISTLE_W, 0.004)),
+         kit.Collider((0, 0, -HEAD_T / 2 - BRISTLE_H / 2), size=(BRISTLE_L, BRISTLE_W, BRISTLE_H)),
          kit.Collider((hx, 0, HANDLE_Z), size=(hl, HANDLE_W, HANDLE_H))]
     z0 = TOP + TOWEL_B_SIZE[2] + HEAD_T / 2 + 0.004
     return kit.Prop("brush", pos=(*BRUSH0, z0), yaw=math.pi / 2, size=(HANDLE_X[1] - HANDLE_X[0] + HEAD_L / 2, HEAD_W,
@@ -172,12 +175,14 @@ def _rot(q):
 
 
 def _zone_points():
-    """Points along the teeth's tops (denture frame), by zone: the front teeth (within 40 degrees of the middle of the
-    front curve) and each side's teeth (the rest of the curve and the back teeth)."""
-    front = [(R * math.sin(math.radians(a)), -R * math.cos(math.radians(a)), HT) for a in range(-40, 41, 10)]
-    far = [(R * math.sin(math.radians(a)), -R * math.cos(math.radians(a)), HT) for a in range(50, 91, 10)]
-    far += [(R, y, HT) for y in (0.005, 0.010, 0.015, LEG_T - 0.002)]
-    near = [(-x, y, z) for x, y, z in far]
+    """Points along the teeth's tops (denture frame), by zone. Every point must be brushed, with the middle of the bristles passing within 4 mm of it. Front teeth: the curve from
+    -45 to 45 degrees every 15. Each side: the curve from 55 to 85 degrees every 15 and the back teeth along the leg
+    (every 4 mm). The far heel's last teeth are under the holding gripper's fingers, so the far side stops at the
+    curve; the near side runs on to the last molar."""
+    pt = lambda a_: (R * math.sin(math.radians(a_)), -R * math.cos(math.radians(a_)), HT)  # noqa: E731
+    front = [pt(a_) for a_ in range(-45, 46, 15)]
+    far = [pt(a_) for a_ in (55, 70, 85)]
+    near = [(-x, y, z) for x, y, z in far] + [(-R, y, HT) for y in (0.004, 0.008, 0.012, 0.016)]
     return [np.array(front), np.array(far), np.array(near)]
 
 
@@ -196,32 +201,43 @@ def brushing(objects):
     Rd, Rb = _rot(d.quat_xyzw), _rot(b.quat_xyzw)
     pd, pb = np.asarray(d.pos, float), np.asarray(b.pos, float)
     tip = pb + Rb @ np.array([0.0, 0.0, TIP_Z])
-    on = []
+    on, pts_on = [], []
     if Rd[2, 2] >= UPRIGHT and float(np.dot(Rb[:, 2], Rd[:, 2])) >= UPRIGHT:
         for k, pts in enumerate(ZONE_PTS):
-            for p in pts:
+            hit = False
+            for i, p in enumerate(pts):
                 w = pd + Rd @ p
                 h = float(np.dot(tip - w, Rd[:, 2]))
                 loc = Rb.T @ (w - tip)
                 if TIP_BAND[0] <= h <= TIP_BAND[1] and abs(loc[0]) <= BRISTLE_L / 2 and abs(loc[1]) <= BRISTLE_W / 2:
-                    on.append(k)
-                    break
+                    hit = True
+                    if abs(loc[0]) <= COVER_R:
+                        pts_on.append((k, i))
+            if hit:
+                on.append(k)
     rel = Rd.T @ (tip - pd)
+    _T["pts_on"] = pts_on
     return on, rel, over(pd, BASIN, BASIN_SIZE, BASIN_WALL)
 
 
-_T = {"episode": None, "objects": None, "step": 0, "strokes": None, "runs": None, "dropped": None}
+_T = {"episode": None, "objects": None, "step": 0, "strokes": None, "runs": None, "dropped": None, "cov": None, "prev_rel": None, "pts_on": []}
 
 
 def _track(objects):
     if _T["episode"] != kit.episode():
-        _T.update(episode=kit.episode(), objects=None, step=0, strokes=[0] * 3, runs=[None] * 3, dropped=None)
+        _T.update(episode=kit.episode(), objects=None, step=0, strokes=[0] * 3, runs=[None] * 3, dropped=None,
+                  cov=[set(), set(), set()], prev_rel=None, pts_on=[])
     if objects is _T["objects"]:
         return
     _T["objects"] = objects
     _T["step"] += 1
     n = _T["step"]
     on, rel, in_basin = brushing(objects)
+    moving = _T["prev_rel"] is not None and float(np.linalg.norm(rel[:2] - _T["prev_rel"][:2])) >= COVER_STEP
+    _T["prev_rel"] = rel.copy()
+    if in_basin and moving:  # a tooth counts as brushed when the bristles on it are moving, over the basin
+        for k, i in _T["pts_on"]:
+            _T["cov"][k].add(i)
     for k in range(3):
         run = _T["runs"][k]
         if k not in on or not in_basin:
@@ -251,8 +267,9 @@ def _track(objects):
     if os.environ.get("DENT_DEBUG"):
         b = objects["brush"]
         tip = np.asarray(b.pos, float) + _rot(b.quat_xyzw) @ np.array([0.0, 0.0, TIP_Z])
-        print(f"DENT {n} den={np.round(pd, 3)} vz={float(d.lin_vel[2]):.2f} basin={in_basin} on={on} "
-              f"tip_rel={np.round(rel, 4)} tip={np.round(tip, 3)} strokes={_T['strokes']} dropped={_T['dropped']} "
+        Rb_, Rd_ = _rot(b.quat_xyzw), _rot(d.quat_xyzw)
+        print(f"DENT {n} tilt={math.degrees(math.acos(min(1.0, float(np.dot(Rb_[:, 2], Rd_[:, 2]))))):.1f} den={np.round(pd, 3)} vz={float(d.lin_vel[2]):.2f} basin={in_basin} on={on} "
+              f"tip_rel={np.round(rel, 4)} tip={np.round(tip, 3)} strokes={_T['strokes']} cov={[len(c_) for c_ in _T['cov']]}/{[len(z) for z in ZONE_PTS]} dropped={_T['dropped']} "
               f"in_cup={in_cup(objects)} L={np.round(objects['left_gripper'].pos, 3)} "
               f"R={np.round(objects['right_gripper'].pos, 3)}", flush=True)
 
@@ -265,7 +282,7 @@ def in_cup(objects):
 
 def zones_done(objects):
     _track(objects)
-    return sum(1 for s in _T["strokes"] if s >= STROKES)
+    return sum(1 for k, s in enumerate(_T["strokes"]) if s >= STROKES and len(_T["cov"][k]) == len(ZONE_PTS[k]))
 
 
 def _job(objects):
@@ -284,9 +301,10 @@ def success(objects):
 
 
 def score(objects):
-    """A stroke: the bristles on a zone's teeth (tips from 5 mm into them to 2 mm above, teeth up and bristles down
-    within 30 degrees) while the brush moves 1 cm or more one way across them, with the denture's middle over the
-    basin's inside. A zone (the front teeth, either side's teeth) is brushed after 4 strokes. 1.0 with all 3 zones
+    """A stroke: the bristle tips in contact with a zone's teeth (resting 0.5 mm below to 5.5 mm above their drawn tops, teeth up
+    and bristles down within 30 degrees) while the brush moves 1 cm or more one way across them, with the denture's
+    middle over the basin's inside. A zone (the front teeth, either side's teeth) is brushed after 4 strokes AND once
+    bristles moving on every tooth of its arch (the back teeth included) have touched it. 1.0 with all 3 zones
     brushed and the denture in its cup; 0.5 with all 3 brushed and not in the cup; 0.25 with 1 or 2 brushed; 0 with
     none. Latched 0: the denture falls (downward faster than 0.5 m/s) anywhere but over the basin or the cup. Possible
     scores: 0, 0.25, 0.5, 1.0."""
@@ -311,6 +329,10 @@ def _brush_hand(tip_xy, tip_z):
     (the handle along y toward -y)."""
     z = TOP + tip_z - TIP_Z + HANDLE_Z + GZ_B
     return (tip_xy[0], tip_xy[1] + GRIP_X, z)
+
+
+H_ZONE = (-0.004, -0.004, -0.004)  # commanded bristle-tip height from the teeth's tops, per zone
+SHIFT = ((0.0, 0.0), (0.005, 0.0), (0.005, 0.0))  # xy aim offset per zone (m)
 
 
 def demo():
@@ -341,32 +363,29 @@ def demo():
     tr = sum(w.duration for w in right)
     right.append(Waypoint(tl - tr, right[-1].pos, FINGER_CLOSED, "wait for the denture", yr))
 
-    def zone(c, t, label, h, n=12, amp=0.008, dur=0.5, levels=(0.0025, 0.0, -0.0025)):
-        """n strokes back and forth along t (unit, xy) about c (xy, world), the bristle tips about h from the teeth's
-        tops (-: pressed into them), lighter and firmer in turn (`levels`), as a hand varies its pressure."""
-        c, t = np.asarray(c, float), np.asarray(t, float)
-        a0 = c - t * amp
-        out = [Waypoint(1.2, _brush_hand(a0, tz + 0.015), FINGER_CLOSED, f"over the {label}", yr),
-               Waypoint(0.5, _brush_hand(a0, tz + h + levels[0]), FINGER_CLOSED, f"bristles on the {label}", yr)]
-        for k in range(n):
-            p = c + t * amp * (1 if k % 2 == 0 else -1)
-            out.append(Waypoint(dur, _brush_hand(p, tz + h + levels[k % len(levels)]), FINGER_CLOSED,
-                                f"brush the {label}", yr))
-        out.append(Waypoint(0.4, _brush_hand(c + t * amp * (1 if n % 2 else -1), tz + 0.015), FINGER_CLOSED,
-                            "lift off", yr))
+    ox, oy = o[0], o[1]
+
+    def sweep(zk, label, h, passes=4, dt=0.2, shift=(0.0, 0.0)):
+        """`passes` strokes along the whole arch of zone `zk` (its tooth points, ends extended 2 mm), the bristle tips
+        at about h from the teeth's tops (negative: pressed on them, the rigid bristles stop at contact)."""
+        pts = [np.array([ox + p[0] + shift[0], oy + p[1] + shift[1]]) for p in ZONE_PTS[zk]]
+        d0, d1 = pts[0] - pts[1], pts[-1] - pts[-2]
+        pts = [pts[0] + 0.002 * d0 / np.linalg.norm(d0)] + pts + [pts[-1] + 0.002 * d1 / np.linalg.norm(d1)]
+        out = [Waypoint(1.2, _brush_hand(pts[0], tz + 0.015), FINGER_CLOSED, f"over the {label}", yr),
+               Waypoint(0.5, _brush_hand(pts[0], tz + h), FINGER_CLOSED, f"bristles on the {label}", yr)]
+        seq = pts
+        for k in range(passes):
+            seq = pts if k % 2 == 0 else pts[::-1]
+            for p in seq[1:]:
+                out.append(Waypoint(dt, _brush_hand(p, tz + h), FINGER_CLOSED, f"brush the {label}", yr))
+        out.append(Waypoint(0.4, _brush_hand(seq[-1], tz + 0.015), FINGER_CLOSED, "lift off", yr))
         return out
 
-    ox, oy = o[0], o[1]
-    a = math.radians(62)
-    # Depth targets per zone: the brush hangs 15 cm out of a friction grip, so its tips sit a few mm off the command,
-    # most on the near side, which also hangs 4.4 cm out from the held heel.
-    right += zone((ox, oy - R), (1.0, 0.0), "front teeth", h=-0.0015)
-    right += zone((ox + R * math.sin(a), oy - R * math.cos(a)), (math.cos(a), math.sin(a)), "far side's teeth",
-                  h=-0.0005)
-    # The held brush's head also trails about 5 mm toward -x of where it is aimed; on the near side that is off the
-    # teeth's outer edge, so the near side's strokes are aimed 5 mm inboard.
-    right += zone((ox - R * math.sin(a) + 0.005, oy - R * math.cos(a)), (math.cos(a), -math.sin(a)),
-                  "near side's teeth", h=0.001)
+    # The brush hangs 15 cm out of a friction grip, so its tips sit a few mm off the command: depth and aim per zone
+    # are set from simulator runs (the rigid bristles stop at the teeth, so a deeper command only presses harder).
+    right += sweep(0, "front teeth", h=H_ZONE[0], shift=SHIFT[0])
+    right += sweep(1, "far side's teeth", h=H_ZONE[1], shift=SHIFT[1])
+    right += sweep(2, "near side's teeth", h=H_ZONE[2], shift=SHIFT[2])
     brushed = sum(w.duration for w in right)
     left.append(Waypoint(brushed - sum(w.duration for w in left), gd, FINGER_CLOSED, "hold it still for the brush", yl))
     # The brush back on its towel.
