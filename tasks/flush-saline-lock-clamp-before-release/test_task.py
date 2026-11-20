@@ -64,6 +64,11 @@ def right_on_press(q):
     return (m.SX, face - m.FINGER_HALF + 0.0005, m.TOP + m.PUSH_Z)
 
 
+def right_on_rod(q):
+    """The right gripper's tool point on the plunger's rod (closed fingers), clear of the thumb press, plunger at q."""
+    return (m.SX, m.STOP0_Y + q - (m.STOPPER_L + m.ROD) / 2, m.TOP + m.PUSH_Z)
+
+
 def left_on_clamp():
     return (m.SX, m.CLAMP_Y, m.TOP + sum(m.JAW_Z) / 2 - 0.012)
 
@@ -105,6 +110,16 @@ def push(q_to, n=20, **kw):
     for k in range(1, n + 1):
         q = q0 + (q_to - q0) * k / n
         out = step(q, right=right_on_press(q), vq=0.003, **kw)
+    return out
+
+
+def push_rod(q_to, n=20, **kw):
+    """Push the plunger by gripping its rod (the thumb press untouched)."""
+    q0 = SIM["q"]
+    out = None
+    for k in range(1, n + 1):
+        q = q0 + (q_to - q0) * k / n
+        out = step(q, right=right_on_rod(q), vq=0.003, **kw)
     return out
 
 
@@ -158,6 +173,32 @@ check(m.reflux(m._T["objects"]) is not None, "let go with the clamp open: reflux
 clamp_shut_while(None)
 s, _ = hands_off()
 check(s == 0.0, "clamping after letting go does not undo it -> 0")
+
+# --- 2b. The same mistake with the rod: grip the rod (thumb press untouched), push, let go before the clamp.
+new_trial()
+push_rod(m.STROKE)
+check(m.on_press(m._T["objects"]) and not m.on_thumb_press(m._T["objects"]), "a hand on the rod counts as on the plunger, not as on the thumb press")
+hands_off(4)
+check(m.reflux(m._T["objects"]) is not None, "rod pushed, let go with the clamp open: reflux latched")
+clamp_shut_while(None)
+s, _ = hands_off()
+check(s == 0.0, "open-line release after a rod push, clamped afterwards -> 0")
+
+# --- 2c. Rod push, clamp shut while the hand is still on the rod, then let go -> 1.0 (the rod is a legitimate way to push).
+new_trial()
+push_rod(m.STROKE)
+q_end = SIM["q"]
+for k in range(1, 7):
+    c = m.SQUEEZE * k / 6
+    step(c=c, left=left_on_clamp(), l_open=max(0.0, 0.25 - 0.25 * k / 6), right=right_on_rod(q_end))
+s, ok = hands_off()
+check(m.reflux(m._T["objects"]) is None and s == 1.0, f"rod pushed, clamped under pressure, then let go -> 1.0 (got {s})")
+
+# --- 2d. A hand resting on the rod without pushing is not a release.
+new_trial()
+for _ in range(10): step(0.0, right=right_on_rod(0.0))
+hands_off(6)
+check(m.reflux(m._T["objects"]) is None, "touching the rod without pushing: no reflux")
 
 # --- 3. Contact chatter: off the press for 2 steps mid-push is not a release.
 new_trial()

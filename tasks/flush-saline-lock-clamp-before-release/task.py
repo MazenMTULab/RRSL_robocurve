@@ -210,6 +210,9 @@ OBJECTS = [_iv_set()]
 
 # Contact shapes, in each link's own frame: the thumb press, and the moving jaw (with the fixed jaw, in the base's).
 PRESS_SHAPE = gk.Block((0.0, -ROD - PRESS_T / 2, 0.0), (2 * PRESS_R, PRESS_T + 0.004, 2 * PRESS_R))
+# The white rod between the stopper and the thumb press is a collider too: a hand can grip it and push the plunger
+# without touching the thumb press, so a hand on the rod counts as a hand on the plunger (4 mm margin all round).
+ROD_SHAPE = gk.Block((0.0, -(STOPPER_L + ROD) / 2, 0.0), (0.010 + 0.004, ROD - STOPPER_L + 0.004, 0.010 + 0.004))
 JAW_SHAPE = gk.Block((0.0, 0.0, 0.0), (JAW_T, JAW_W, JAW_Z[1] - JAW_Z[0]))
 FIXED_JAW_SHAPE = gk.Block((FIXED_JAW_X - SX, CLAMP_Y, sum(JAW_Z) / 2), (JAW_T, JAW_W, JAW_Z[1] - JAW_Z[0]))
 
@@ -232,8 +235,13 @@ def flushed_ml(objects):
     return max(kit.law_state("iv_set/plunger").get("max_q", 0.0), plunger_q(objects)) * ML_PER_M
 
 
-def on_press(objects):
+def on_thumb_press(objects):
     return bool(gk.touching(objects, "iv_set/plunger", PRESS_SHAPE))
+
+
+def on_press(objects):
+    """A hand on the plunger: on its thumb press or gripping its rod (either can push it)."""
+    return bool(on_thumb_press(objects) or gk.touching(objects, "iv_set/plunger", ROD_SHAPE))
 
 
 def on_clamp(objects):
@@ -288,7 +296,7 @@ def _job(objects):
     if _T["reflux"] is not None:
         return 0.0  # let go of the plunger with the line open: blood drawn back into the catheter (latched)
     if on_press(objects) or on_clamp(objects):
-        return 0.0  # a hand still on the thumb press or the clamp: not finished
+        return 0.0  # a hand still on the thumb press, the rod or the clamp: not finished
     if abs(kit.joint(objects, "iv_set/plunger").vel) > STILL or abs(kit.joint(objects, "iv_set/clamp").vel) > STILL:
         return 0.0
     if not clamp_shut(objects):

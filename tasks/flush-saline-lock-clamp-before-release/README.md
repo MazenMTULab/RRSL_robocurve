@@ -66,8 +66,8 @@ The let-go rule is latched for the whole trial. Everything else is read from the
 
 | Outcome | Score |
 |---|---|
-| A gripper off the thumb press for 0.15 s or more after pushing at least 0.1 mL in that contact, while the clamp is still open, at any time (latched) | 0 |
-| A gripper still touching the thumb press or the clamp at the end (its own shape within 2 mm) | 0 |
+| A gripper off the plunger (thumb press or rod) for 0.15 s or more after pushing at least 0.1 mL in that contact, while the clamp is still open, at any time (latched) | 0 |
+| A gripper still touching the thumb press, the rod or the clamp at the end (its own shape within 2 mm) | 0 |
 | Plunger or clamp jaw still moving faster than 2 mm/s | 0 |
 | Clamp not shut (its teeth not caught) | 0 |
 | Less than 1.0 mL flushed | 0 |
@@ -128,3 +128,7 @@ pressure.
 ## License
 
 MIT, as the repository. All meshes are built in code from boxes and cylinders; no third-party assets.
+
+## Pushing by the rod
+
+The plunger's white rod has a collider, so a hand can push the plunger by gripping the rod without touching the thumb press. The release tracker therefore counts a hand on the thumb press or on the rod (a 4 mm margin round the rod) as a hand on the plunger. `test_task.py` covers it: a rod push followed by a release with the clamp open scores 0 (even if the clamp is shut afterwards); a rod push with the clamp shut under pressure scores 1.0; resting a hand on the rod without pushing is not a release.
